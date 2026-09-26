@@ -1,0 +1,216 @@
+from __future__ import annotations
+
+import argparse
+import csv
+import json
+import os
+import sys
+from datetime import date, datetime, timedelta
+from pathlib import Path
+from zoneinfo import ZoneInfo
+
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+sys.path.insert(0, str(SRC))
+
+from truerate.brokers.gmo_gaika import collect_month, iter_months
+from truerate.rates.frankfurter import fetch_usd_cross
+from truerate.series import build_site_payload
+
+JST = ZoneInfo("Asia/Tokyo")
+SWAP_PATH = ROOT / "data" / "swaps" / "gmo_gaika.csv"
+RATE_PATH = ROOT / "data" / "rates" / "usd_reference.csv"
+SITE_DATA_PATH = ROOT / "site" / "data" / "site-data.json"
+
+SWAP_FIELDS = [
+    "broker",
+    "pair",
+    "trade_date",
+    "effective_date",
+    "sp_days",
+    "long_swap_jpy",
+    "short_swap_jpy",
+    "unit",
+    "status",
+    "source",
+    "fetched_at",
+]
+RATE_FIELDS = ["date", "currency", "per_usd", "provider"]
+
+
+def parse_month(value: str) -> date:
+    try:
+        year_text, month_text = value.split("-", 1)
+        return date(int(year_text), int(month_text), 1)
+    except Exception as exc:
+        raise argparse.ArgumentTypeError("month must be YYYY-MM") from exc
+
+
+def previous_month(day: date) -> date:
+    first = day.replace(day=1)
+    return (first - timedelta(days=1)).replace(day=1)
+
+
+def load_csv(path: Path) -> list[dict[str, str]]:
+    if not path.exists():
+        return []
+    with path.open("r", encoding="utf-8", newline="") as handle:
+        return list(csv.DictReader(handle))
+
+
+def write_csv(path: Path, rows: list[dict[str, str]], fields: list[str]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temp = path.with_suffix(path.suffix + ".tmp")
+    with temp.open("w", encoding="utf-8", newline="") as handle:
+        writer = csv.DictWriter(handle, fieldnames=fields)
+        writer.writeheader()
+        writer.writerows(rows)
+    temp.replace(path)
+
+
+def merge_swaps(
+    existing: list[dict[str, str]],
+    incoming: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    merged = {(row["broker"], row["pair"], row["trade_date"]): row for row in existing}
+
+    for row in incoming:
+        key = (row["broker"], row["pair"], row["trade_date"])
+        current = merged.get(key)
+        incoming_complete = row["long_swap_jpy"] != "" and row["short_swap_jpy"] != ""
+
+        # Never destroy a confirmed historical cashflow because a later scrape
+        # temporarily returned an empty/scheduled cell.
+        if (
+            current
+            and current.get("status") == "confirmed"
+            and (row.get("status") != "confirmed" or not incoming_complete)
+        ):
+            continue
+        merged[key] = row
+
+    return sorted(
+        merged.values(),
+        key=lambda row: (row["broker"], row["pair"], row["trade_date"]),
+    )
+
+
+def merge_rates(
+    existing: list[dict[str, str]],
+    incoming: list[dict[str, str]],
+) -> list[dict[str, str]]:
+    merged = {(row["date"], row["currency"]): row for row in existing}
+    for row in incoming:
+        merged[(row["date"], row["currency"])] = row
+    return sorted(merged.values(), key=lambda row: (row["date"], row["currency"]))
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Refresh TrueRate data")
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Re-fetch every GMO month and every reference-rate currency.",
+    )
+    parser.add_argument(
+        "--start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_START_MONTH", "2022-01")),
+        help="Historical backfill start month (default: 2022-01).",
+    )
+    args = parser.parse_args()
+
+    now = datetime.now(tz=JST)
+    today = now.date()
+    existing_swaps = load_csv(SWAP_PATH)
+
+    if args.full or not existing_swaps:
+        month_start = args.start
+    else:
+        month_start = previous_month(today)
+
+    incoming_swaps: list[dict[str, str]] = []
+    current_month_pair_count = 0
+
+    for year, month in iter_months(month_start, today):
+        print(f"Collecting GMO Gaika {year:04d}-{month:02d}...")
+        records = collect_month(year, month, today_jst=today)
+        pair_count = len({record.pair for record in records})
+        print(f"  {len(records)} rows / {pair_count} pairs")
+        if year == today.year and month == today.month:
+            current_month_pair_count = pair_count
+        incoming_swaps.extend(record.to_csv_row() for record in records)
+
+    if current_month_pair_count < 20:
+        raise RuntimeError(
+            "GMO Gaika current-month parser returned fewer than 20 pairs; "
+            "refusing to publish possibly broken scrape data."
+        )
+
+    swaps = merge_swaps(existing_swaps, incoming_swaps)
+    write_csv(SWAP_PATH, swaps, SWAP_FIELDS)
+
+    confirmed_swaps = [
+        row
+        for row in swaps
+        if row.get("status") == "confirmed"
+        and row.get("long_swap_jpy", "") != ""
+        and row.get("short_swap_jpy", "") != ""
+    ]
+    if not confirmed_swaps:
+        raise RuntimeError("No confirmed GMO Gaika swap rows are available.")
+
+    first_trade = min(date.fromisoformat(row["trade_date"]) for row in confirmed_swaps)
+    rate_history_start = first_trade - timedelta(days=10)
+
+    currencies = {"JPY"}
+    for row in swaps:
+        base, quote = row["pair"].split("/", 1)
+        currencies.update({base.upper(), quote.upper()})
+    currencies.discard("USD")
+
+    existing_rates = load_csv(RATE_PATH)
+    existing_currencies = {row["currency"] for row in existing_rates}
+    incoming_rates: list[dict[str, str]] = []
+
+    for currency in sorted(currencies):
+        if args.full or not existing_rates or currency not in existing_currencies:
+            currency_start = rate_history_start
+        else:
+            currency_start = max(rate_history_start, today - timedelta(days=10))
+
+        print(f"Collecting reference rate USD/{currency} from {currency_start}...")
+        rows = fetch_usd_cross(currency, currency_start, today)
+        if not rows:
+            print(f"  warning: no Frankfurter history for {currency}; affected pairs will be omitted")
+        else:
+            print(f"  {len(rows)} rate rows")
+        incoming_rates.extend(rows)
+
+    rates = merge_rates(existing_rates, incoming_rates)
+    write_csv(RATE_PATH, rates, RATE_FIELDS)
+
+    payload = build_site_payload(
+        swaps,
+        rates,
+        generated_at=now.isoformat(timespec="seconds"),
+        today=today,
+        unit=10_000,
+    )
+    SITE_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
+    temp_json = SITE_DATA_PATH.with_suffix(".json.tmp")
+    temp_json.write_text(
+        json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
+        encoding="utf-8",
+    )
+    temp_json.replace(SITE_DATA_PATH)
+
+    print(
+        f"Published {len(payload['pairs'])} pairs, "
+        f"{len(swaps)} swap rows, {len(rates)} reference-rate rows."
+    )
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

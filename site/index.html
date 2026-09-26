@@ -1,0 +1,96 @@
+<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FX spot return and broker swap cashflow comparison">
+  <title>TrueRate — FX Total Return</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <div>
+        <div class="eyebrow">FX TOTAL RETURN</div>
+        <h1>TrueRate</h1>
+        <p class="lead">為替変動と実際のスワップ付与を分けて、ロング / ショートの実質リターンを見る。</p>
+      </div>
+      <div class="update-box">
+        <span>DATA UPDATED</span>
+        <strong id="updatedAt">—</strong>
+      </div>
+    </header>
+
+    <section class="controls card">
+      <label>
+        <span>通貨ペア</span>
+        <select id="pairSelect"></select>
+      </label>
+
+      <div class="control-group">
+        <span>方向</span>
+        <div class="segmented" id="sideButtons">
+          <button data-side="long" class="active">Long</button>
+          <button data-side="short">Short</button>
+          <button data-side="both">Both</button>
+        </div>
+      </div>
+
+      <div class="control-group period-control">
+        <span>期間</span>
+        <div class="segmented" id="periodButtons">
+          <button data-period="1M">1M</button>
+          <button data-period="3M">3M</button>
+          <button data-period="1Y" class="active">1Y</button>
+          <button data-period="3Y">3Y</button>
+          <button data-period="MAX">MAX</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="broker-row card">
+      <div>
+        <div class="section-label">業者</div>
+        <div id="brokerButtons" class="broker-buttons"></div>
+      </div>
+      <div class="unit-note">基準数量 <strong id="unitLabel">10,000</strong> 通貨</div>
+    </section>
+
+    <section class="metrics" id="metrics"></section>
+
+    <section class="chart-card card">
+      <div class="chart-heading">
+        <div>
+          <div class="section-label">TOTAL RETURN INDEX</div>
+          <h2 id="chartTitle">—</h2>
+        </div>
+        <div class="legend-note">選択期間の初日 = 100</div>
+      </div>
+      <div id="chart"></div>
+    </section>
+
+    <section class="detail-grid">
+      <article class="card detail-card">
+        <div class="section-label">計算ルール</div>
+        <h3>スワップは翌日に反映</h3>
+        <p>GMO外貨のカレンダー上の「取引日」ではなく、その翌日のTrueRate指数に反映します。日本時間のNYクローズ後に口座へ反映されるタイミングに合わせた扱いです。</p>
+      </article>
+      <article class="card detail-card">
+        <div class="section-label">REFERENCE RATE</div>
+        <h3>業者共通の為替レート</h3>
+        <p>業者間でスワップ条件だけを比較しやすくするため、為替部分には共通の公的ソース系参照レートを使用します。業者固有のBid/Askやスプレッドは含みません。</p>
+      </article>
+    </section>
+
+    <footer>
+      <span>TrueRate</span>
+      <span>参考情報。実際の取引条件・約定価格とは異なります。</span>
+    </footer>
+  </main>
+
+  <div id="errorState" class="error-state" hidden></div>
+
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
+  <script src="./app.js"></script>
+</body>
+</html>

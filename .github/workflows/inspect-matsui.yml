@@ -1,0 +1,63 @@
+name: Inspect Matsui swap history source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-matsui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - name: Inspect
+        run: |
+          python - <<'PY'
+          import re, requests
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+          h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en;q=0.8"}
+          u="https://www.matsui.co.jp/fx/market/past-swap/"
+          r=requests.get(u,headers=h,timeout=30)
+          print("PAGE",r.status_code,r.url,len(r.text))
+          soup=BeautifulSoup(r.text,"html.parser")
+          print("SCRIPTS")
+          for s in soup.find_all("script",src=True):
+              su=urljoin(r.url,s["src"])
+              print("SCRIPT",su)
+              if "google" in su or "marsflag" in su:
+                  continue
+              try:
+                  x=requests.get(su,headers=h,timeout=30)
+                  txt=x.text
+                  if any(k in txt.lower() for k in ("swap","past-swap","api","json")):
+                      print("LEN",len(txt))
+                      for pat in [
+                          r'https?://[^"\'<> ]+',
+                          r'["\']([^"\']*(?:swap|api|json)[^"\']*)["\']',
+                          r'.{0,160}(?:past-swap|swap|api|json|fetch|ajax).{0,420}',
+                      ]:
+                          for m in re.finditer(pat,txt,re.I|re.S):
+                              z=m.group(0).replace("\n"," ")
+                              if any(k in z.lower() for k in ("swap","api","json")):
+                                  print("MATCH",z[:1000])
+              except Exception as e:
+                  print("ERR",e)
+          print("HTML_MATCHES")
+          for pat in [
+              r'https?://[^"\'<> ]+',
+              r'["\']([^"\']*(?:swap|api|json)[^"\']*)["\']',
+              r'.{0,180}(?:past-swap|swap|api|json|fetch|ajax).{0,500}',
+          ]:
+              for m in re.finditer(pat,r.text,re.I|re.S):
+                  z=m.group(0).replace("\n"," ")
+                  if any(k in z.lower() for k in ("swap","api","json")):
+                      print("HTML",z[:1000])
+          PY

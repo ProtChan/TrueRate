@@ -103,7 +103,10 @@ jobs:
                   for tr in table.find_all("tr"):
                       vals=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
                       if len(vals)<4: continue
-                      mt=re.search(r"(\\d{1,2})月(\\d{1,2})日",vals[0])
-                      if mt and int(mt.group(1))==m and int(mt.group(2)) in days:
+                      targets = {
+                          (2024,11): ("11月1日","11月27日"),
+                          (2024,12): ("12月11日",),
+                      }
+                      if any(vals[0].startswith(prefix) for prefix in targets.get((y,m),())):
                           print("GBPUSD_RAW",y,m,vals[:4])
           PY

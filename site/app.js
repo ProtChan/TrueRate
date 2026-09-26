@@ -21,6 +21,9 @@ const state = {
 };
 
 const BROKER_COLORS = {
+  dmm_fx: "#8b5cf6",
+  dmm_fx_mini: "#a78bfa",
+  dmm_fx_large: "#6d28d9",
   click365: "#c084fc",
   matsui_fx: "#38bdf8",
   fxbroadnet: "#facc15",

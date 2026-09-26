@@ -5,6 +5,18 @@ from datetime import date, timedelta
 from typing import Iterable
 
 BROKERS = {
+    "dmm_fx": {
+        "id": "dmm_fx",
+        "name": "DMM FX",
+    },
+    "dmm_fx_mini": {
+        "id": "dmm_fx_mini",
+        "name": "DMM FX Mini",
+    },
+    "dmm_fx_large": {
+        "id": "dmm_fx_large",
+        "name": "DMM FX Large",
+    },
     "click365": {
         "id": "click365",
         "name": "くりっく365",

@@ -4,6 +4,9 @@ TrueRate is a static FX total-return dashboard that separates common market move
 
 Supported brokers/products:
 
+- **DMM FX**
+- **DMM FX Mini**
+- **DMM FX Large**
 - **くりっく365**
 - **松井証券FX**
 - **FXブロードネット**
@@ -19,15 +22,15 @@ Supported brokers/products:
 - **GMOクリック証券（FXネオ）**
 - **トライオートFX**
 
-## Core rule: swap is effective on the following JST day
+## Core rule: swap is effective on the following business day
 
 Broker calendars publish swap against a Japanese transaction/calendar date. TrueRate preserves that source date as `trade_date`, but the return series uses:
 
 ~~~text
-effective_date = trade_date + 1 calendar day
+effective_date = next business day after trade_date
 ~~~
 
-This is deliberate. Rollover happens around the New York close, which is the following morning in Japan. A swap shown for 2026-09-09 therefore enters the TrueRate daily index on 2026-09-10.
+For the default broker rule, a weekday display date moves to the next weekday, so Friday moves to Monday. SBI FX Trade is the exception: its display date itself is used, with weekend display dates rolled to Monday.
 
 A populated amount is only marked `confirmed` once its `effective_date` has arrived in JST. Future populated values remain `scheduled`.
 
@@ -52,6 +55,7 @@ The browser rebases broker-to-broker comparisons to a shared visible start date.
 
 ## Data sources
 
+- DMM FX / Mini / Large: official public swap-calendar JSON API
 - くりっく365: 東京金融取引所 official historical FX CSV (swap point)
 - 松井証券FX: official yearly swap-history CSV
 - FXブロードネット: official monthly swap-calendar PDF
@@ -81,6 +85,7 @@ scripts/
   update_data.py         incremental collection/build pipeline
 
 src/truerate/
+  brokers/dmm_fx.py      DMM FX / Mini / Large rolling API collector
   brokers/click365.py    くりっく365 TFX historical collector
   brokers/matsui_fx.py   松井証券FX yearly CSV collector
   brokers/fxbroadnet.py FXブロードネット monthly PDF collector
@@ -114,6 +119,7 @@ The data workflow runs every day at **09:15 JST**.
 
 On a new data set:
 
+- DMM FX / Mini / Large import the public rolling API (roughly the latest two months) and then accumulate history daily in TrueRate
 - くりっく365 backfills from `2021-01`
 - 松井証券FX backfills from `2023-01`
 - FXブロードネット backfills from `2023-10`
@@ -126,7 +132,7 @@ On a new data set:
 - GMOクリック証券 backfills from `2024-01`
 - トライオートFX backfills from `2024-01`
 
-After the initial backfill, monthly-history brokers refresh their recent months. みんなのFX refreshes its official rolling one-month calendar and merges those rows into TrueRate's retained history. Historical confirmed values are preserved, reference rates are updated, the site payload is rebuilt, and GitHub Pages is deployed in the same workflow.
+After the initial backfill, monthly-history brokers refresh their recent months. DMM FX and みんなのFX/LIGHT系 refresh their official rolling data and merge those rows into TrueRate's retained history. Historical confirmed values are preserved, reference rates are updated, the site payload is rebuilt, and GitHub Pages is deployed in the same workflow.
 
 Historical starts can be changed with:
 

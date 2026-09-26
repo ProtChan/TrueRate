@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
+from truerate.brokers.dmm_fx import collect_recent_products as collect_dmm_products
 from truerate.brokers.click365 import collect_period as collect_click365_period
 from truerate.brokers.fxbroadnet import collect_month as collect_fxbroadnet_month
 from truerate.brokers.matsui_fx import collect_year as collect_matsui_year
@@ -37,6 +38,9 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
+DMM_SWAP_PATH = ROOT / "data" / "swaps" / "dmm_fx.csv"
+DMM_MINI_SWAP_PATH = ROOT / "data" / "swaps" / "dmm_fx_mini.csv"
+DMM_LARGE_SWAP_PATH = ROOT / "data" / "swaps" / "dmm_fx_large.csv"
 CLICK365_SWAP_PATH = ROOT / "data" / "swaps" / "click365.csv"
 MATSUI_SWAP_PATH = ROOT / "data" / "swaps" / "matsui_fx.csv"
 FXBROADNET_SWAP_PATH = ROOT / "data" / "swaps" / "fxbroadnet.csv"
@@ -259,6 +263,31 @@ def refresh_sbi(
     merged = merge_swaps(existing, incoming)
     write_csv(SBI_SWAP_PATH, merged, SWAP_FIELDS)
     return merged
+
+
+def refresh_dmm(today: date) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
+    standard_existing = load_csv(DMM_SWAP_PATH)
+    mini_existing = load_csv(DMM_MINI_SWAP_PATH)
+    large_existing = load_csv(DMM_LARGE_SWAP_PATH)
+
+    print("Collecting DMM FX standard + Mini + Large rolling API...")
+    standard, mini, large = collect_dmm_products(today_jst=today)
+    standard_count = len({record.pair for record in standard})
+    mini_count = len({record.pair for record in mini})
+    large_count = len({record.pair for record in large})
+    print(
+        f"  standard: {len(standard)} rows / {standard_count} pairs; "
+        f"Mini: {len(mini)} rows / {mini_count} pairs; "
+        f"Large: {len(large)} rows / {large_count} pairs"
+    )
+    if standard_count < 20 or mini_count < 4 or large_count < 4:
+        raise RuntimeError("DMM FX API returned an unexpectedly small product set.")
+
+    return (
+        _merge_and_write(DMM_SWAP_PATH, standard_existing, standard),
+        _merge_and_write(DMM_MINI_SWAP_PATH, mini_existing, mini),
+        _merge_and_write(DMM_LARGE_SWAP_PATH, large_existing, large),
+    )
 
 
 def refresh_click365(
@@ -571,6 +600,7 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
+    dmm_swaps, dmm_mini_swaps, dmm_large_swaps = refresh_dmm(today)
     click365_swaps = refresh_click365(today, full=args.full, start=args.click365_start)
     matsui_swaps = refresh_matsui(today, full=args.full, start=args.matsui_start)
     fxbroadnet_swaps = refresh_fxbroadnet(today, full=args.full, start=args.fxbroadnet_start)
@@ -584,7 +614,10 @@ def main() -> int:
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
     swaps = (
-        click365_swaps
+        dmm_swaps
+        + dmm_mini_swaps
+        + dmm_large_swaps
+        + click365_swaps
         + matsui_swaps
         + fxbroadnet_swaps
         + minfx_swaps

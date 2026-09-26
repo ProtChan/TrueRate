@@ -41,6 +41,15 @@ jobs:
                   s=m.group(0).replace("\n"," ")
                   if any(k in s.lower() for k in ("swap","calendar","json","csv","api")):
                       print(s[:900])
+          print("\nSAMPLE CSV")
+          for ym in ("202609","202408"):
+              cu=f"https://www.gaitame.com/products/nextneo/csv/{ym}.csv"
+              q=requests.get(cu,headers=h,timeout=30)
+              print("CSV",ym,q.status_code,len(q.content),q.headers.get("content-type"))
+              print(q.content[:10000].decode("cp932",errors="replace"))
+          print("\nCURRENCY MAP")
+          for m in re.finditer(r'(?:const|let|var)\\s+currencies\\s*=\\s*\\{.{0,12000?}\\};',r.text,re.I|re.S):
+              print(m.group(0)[:14000])
           print("\nASSETS")
           for s in soup.find_all("script",src=True):
               su=urljoin(r.url,s["src"])

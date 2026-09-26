@@ -13,6 +13,8 @@ const state = {
 };
 
 const BROKER_COLORS = {
+  matsui_fx: "#38bdf8",
+  fxbroadnet: "#facc15",
   gaitame_com: "#57e3b4",
   gmo_gaika: "#60a5fa",
   gmo_click: "#f2b45f",

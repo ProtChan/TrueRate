@@ -13,6 +13,8 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
+from truerate.brokers.fxbroadnet import collect_month as collect_fxbroadnet_month
+from truerate.brokers.matsui_fx import collect_year as collect_matsui_year
 from truerate.brokers.gaitame_com import collect_month as collect_gaitame_month
 from truerate.brokers.hirose import collect_history as collect_hirose_history
 from truerate.brokers.jfx import collect_history as collect_jfx_history
@@ -29,6 +31,8 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
+MATSUI_SWAP_PATH = ROOT / "data" / "swaps" / "matsui_fx.csv"
+FXBROADNET_SWAP_PATH = ROOT / "data" / "swaps" / "fxbroadnet.csv"
 MINFX_SWAP_PATH = ROOT / "data" / "swaps" / "minfx.csv"
 MINFX_LIGHT_SWAP_PATH = ROOT / "data" / "swaps" / "minfx_light.csv"
 LIGHTFX_SWAP_PATH = ROOT / "data" / "swaps" / "lightfx.csv"
@@ -223,6 +227,68 @@ def refresh_sbi(
     return merged
 
 
+def refresh_matsui(
+    today: date,
+    *,
+    full: bool,
+    start: date,
+) -> list[dict[str, str]]:
+    existing = load_csv(MATSUI_SWAP_PATH)
+    start_year = start.year if full or not existing else max(start.year, (today - timedelta(days=45)).year)
+    incoming: list[dict[str, str]] = []
+    current_pair_count = 0
+
+    for year in range(start_year, today.year + 1):
+        print(f"Collecting Matsui FX {year}...")
+        records = collect_matsui_year(year, today_jst=today)
+        pair_count = len({record.pair for record in records})
+        print(f"  {len(records)} rows / {pair_count} pairs")
+        if year == today.year:
+            current_pair_count = pair_count
+        incoming.extend(record.to_csv_row() for record in records)
+
+    if current_pair_count < 28:
+        raise RuntimeError(
+            "Matsui FX current-year collector returned fewer than 28 pairs; "
+            "refusing to publish possibly broken source data."
+        )
+
+    merged = merge_swaps(existing, incoming)
+    write_csv(MATSUI_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
+
+
+def refresh_fxbroadnet(
+    today: date,
+    *,
+    full: bool,
+    start: date,
+) -> list[dict[str, str]]:
+    existing = load_csv(FXBROADNET_SWAP_PATH)
+    month_start = start if full or not existing else previous_month(today)
+    incoming: list[dict[str, str]] = []
+    current_pair_count = 0
+
+    for year, month in iter_months(month_start, today):
+        print(f"Collecting FX Broadnet {year:04d}-{month:02d}...")
+        records = collect_fxbroadnet_month(year, month, today_jst=today)
+        pair_count = len({record.pair for record in records})
+        print(f"  {len(records)} rows / {pair_count} pairs")
+        if year == today.year and month == today.month:
+            current_pair_count = pair_count
+        incoming.extend(record.to_csv_row() for record in records)
+
+    if current_pair_count < 20:
+        raise RuntimeError(
+            "FX Broadnet current-month collector returned fewer than 20 pairs; "
+            "refusing to publish possibly broken PDF data."
+        )
+
+    merged = merge_swaps(existing, incoming)
+    write_csv(FXBROADNET_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
+
+
 def refresh_gaitame(
     today: date,
     *,
@@ -370,6 +436,18 @@ def main() -> int:
         help="GMO Gaika historical backfill start month (default: 2022-01).",
     )
     parser.add_argument(
+        "--matsui-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_MATSUI_START_MONTH", "2023-01")),
+        help="Matsui FX historical backfill start month (default: 2023-01).",
+    )
+    parser.add_argument(
+        "--fxbroadnet-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_FXBROADNET_START_MONTH", "2023-10")),
+        help="FX Broadnet historical PDF backfill start month (default: 2023-10).",
+    )
+    parser.add_argument(
         "--gaitame-start",
         type=parse_month,
         default=parse_month(os.environ.get("TRUERATE_GAITAME_START_MONTH", "2022-01")),
@@ -410,6 +488,8 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
+    matsui_swaps = refresh_matsui(today, full=args.full, start=args.matsui_start)
+    fxbroadnet_swaps = refresh_fxbroadnet(today, full=args.full, start=args.fxbroadnet_start)
     minfx_swaps, minfx_light_swaps = refresh_minfx(today)
     lightfx_swaps, lightfx_light_swaps = refresh_lightfx(today)
     sbi_swaps = refresh_sbi(today, full=args.full, start=args.sbi_start)
@@ -420,7 +500,9 @@ def main() -> int:
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
     swaps = (
-        minfx_swaps
+        matsui_swaps
+        + fxbroadnet_swaps
+        + minfx_swaps
         + minfx_light_swaps
         + lightfx_swaps
         + lightfx_light_swaps

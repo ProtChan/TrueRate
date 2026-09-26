@@ -84,6 +84,32 @@ jobs:
                           print(" TFX_MATCH",z[:1300])
                   except Exception as e: print(" TFX_ERR",e)
 
+          # Probe the summary CSV endpoint (up to one year per request).
+          params=[
+              ("HistoricalData[submit_type]","csv"),
+              ("HistoricalData[period_start_type]","date"),
+              ("HistoricalData[period_start][year]","2026"),
+              ("HistoricalData[period_start][month]","1"),
+              ("HistoricalData[period_start][day]","1"),
+              ("HistoricalData[period_end_type]","date"),
+              ("HistoricalData[period_end][year]","2026"),
+              ("HistoricalData[period_end][month]","9"),
+              ("HistoricalData[period_end][day]","24"),
+              ("HistoricalData[get_preference][]","swap_point"),
+          ]
+          for pair in ("USD/JPY","ZAR/JPY","HUF/JPY","EUR/USD"):
+              key="HistoricalData[product_type1][]" if pair.endswith("/JPY") else "HistoricalData[product_type2][]"
+              params.append((key,pair))
+          sr=requests.get("https://www.tfx.co.jp/historical/fx/result",params=params,headers=h,timeout=60)
+          print("TFX_SUMMARY",sr.status_code,sr.url,len(sr.content),sr.headers.get("content-type"),sr.headers.get("content-disposition"))
+          for enc in ("cp932","utf-8-sig","shift_jis"):
+              try:
+                  st=sr.content.decode(enc)
+                  print("TFX_SUMMARY_ENC",enc)
+                  print(st[:12000])
+                  break
+              except Exception: pass
+
           # One official daily CSV to learn format.
           cu="https://www.tfx.co.jp/kawase/document/PRT-010-CSV-003-20260924.CSV"
           cr=requests.get(cu,headers=h,timeout=30)

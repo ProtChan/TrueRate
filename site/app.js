@@ -20,7 +20,8 @@ const state = {
   tableSort: { key: "total", direction: "desc" },
 };
 
-const BROKER_COLORS = {\n  saxo_fx: "#2563eb",
+const BROKER_COLORS = {
+  saxo_fx: "#2563eb",
   oanda_ny: "#a78bfa",
   rakuten_fx: "#e11d48",
   dmm_fx: "#8b5cf6",

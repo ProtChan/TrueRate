@@ -11,7 +11,8 @@ from truerate.brokers.click365 import CROSS_PAIRS, JPY_PAIRS, PAIR_UNITS
 from truerate.series import BROKERS
 
 TFX_MARGIN_URL_TEMPLATE = "https://www.tfx.co.jp/mkinfo/data/{yyyymmdd}fxmargin.csv"
-OANDA_NY_MARGIN_URL = "https://www.oanda.jp/fx/ny4/retail-lineup"\nSAXO_MARGIN_URL = "https://www.home.saxo/ja-jp/campaigns/forex-list"
+OANDA_NY_MARGIN_URL = "https://www.oanda.jp/fx/ny4/retail-lineup"
+SAXO_MARGIN_URL = "https://www.home.saxo/ja-jp/campaigns/forex-list"
 
 # Domestic retail OTC FX products in this project use the 25x retail basis.
 # Keep this broker-specific so exceptions can be changed without touching the UI.

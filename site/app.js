@@ -22,8 +22,8 @@ function formatPct(value) {
 function formatJpy(value) {
   if (!Number.isFinite(value)) return "—";
   const rounded = Math.round(value);
-  const sign = rounded > 0 ? "+" : "";
-  return `${sign}¥${rounded.toLocaleString("ja-JP")}`;
+  const sign = rounded > 0 ? "+" : rounded < 0 ? "-" : "";
+  return `${sign}¥${Math.abs(rounded).toLocaleString("ja-JP")}`;
 }
 
 function valueClass(value) {
@@ -34,12 +34,12 @@ function valueClass(value) {
 
 function cutoffFor(points) {
   if (!points.length || state.period === "MAX") return null;
-  const last = new Date(`${points[points.length - 1].date}T00:00:00+09:00`);
+  const last = new Date(`${points[points.length - 1].date}T00:00:00Z`);
   const cutoff = new Date(last);
-  if (state.period === "1M") cutoff.setMonth(cutoff.getMonth() - 1);
-  if (state.period === "3M") cutoff.setMonth(cutoff.getMonth() - 3);
-  if (state.period === "1Y") cutoff.setFullYear(cutoff.getFullYear() - 1);
-  if (state.period === "3Y") cutoff.setFullYear(cutoff.getFullYear() - 3);
+  if (state.period === "1M") cutoff.setUTCMonth(cutoff.getUTCMonth() - 1);
+  if (state.period === "3M") cutoff.setUTCMonth(cutoff.getUTCMonth() - 3);
+  if (state.period === "1Y") cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 1);
+  if (state.period === "3Y") cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 3);
   return cutoff.toISOString().slice(0, 10);
 }
 

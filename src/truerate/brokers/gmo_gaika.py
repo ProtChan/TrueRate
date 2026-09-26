@@ -12,7 +12,7 @@ from truerate.models import SwapRecord
 
 BROKER_ID = "gmo_gaika"
 BROKER_NAME = "GMO外貨"
-BASE_URL = "https://www.gaikaex.com/gaikaex/mark/swap/calendar.php"
+BASE_URL = "https://sec.gaikaex.com/gaikaex/mark/swap/calendar.php"
 UNIT = 10_000
 PAIR_RE = re.compile(r"\b([A-Z]{3})\s*/\s*([A-Z]{3})\b")
 DATE_RE = re.compile(r"(\d{1,2})月(\d{1,2})日")
@@ -159,9 +159,15 @@ def collect_month(
     today_jst: date | None = None,
 ) -> list[SwapRecord]:
     client = session or requests.Session()
-    client.headers.setdefault(
-        "User-Agent",
-        "TrueRate/0.1 (+https://github.com/ProtChan/TrueRate)",
+    client.headers.update(
+        {
+            "User-Agent": (
+                "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                "(KHTML, like Gecko) Chrome/153.0 Safari/537.36"
+            ),
+            "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+            "Referer": "https://sec.gaikaex.com/gaikaex/mark/swap/",
+        }
     )
     response = client.get(
         BASE_URL,

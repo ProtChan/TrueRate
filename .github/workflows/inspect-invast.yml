@@ -1,0 +1,42 @@
+name: Inspect Invast swap calendar internals
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-invast.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Inspect page source and JS assets
+        run: |
+          python - <<'PY'
+          import re, requests
+          from urllib.parse import urljoin
+
+          url="https://www.invast.jp/triauto/swap-calendar/"
+          h={"User-Agent":"Mozilla/5.0"}
+          r=requests.get(url,headers=h,timeout=30)
+          print("PAGE",r.status_code,r.url,len(r.text))
+          scripts=re.findall(r'<script[^>]+src=["\']([^"\']+)',r.text,re.I)
+          print("SCRIPTS",scripts)
+          for src in scripts:
+              u=urljoin(r.url,src)
+              try:
+                  x=requests.get(u,headers=h,timeout=30)
+                  print("\nASSET",x.status_code,u,len(x.text))
+                  for m in re.finditer(r'.{0,160}(?:swap|api|calendar|axios|fetch).{0,240}',x.text,re.I|re.S):
+                      s=m.group(0).replace("\n"," ")
+                      if "swap" in s.lower() or "api" in s.lower():
+                          print(s[:450])
+              except Exception as e:
+                  print("ERR",u,e)
+          PY

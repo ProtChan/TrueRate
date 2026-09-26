@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
+from truerate.brokers.click365 import collect_period as collect_click365_period
 from truerate.brokers.fxbroadnet import collect_month as collect_fxbroadnet_month
 from truerate.brokers.matsui_fx import collect_year as collect_matsui_year
 from truerate.brokers.gaitame_com import collect_month as collect_gaitame_month
@@ -31,6 +32,7 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
+CLICK365_SWAP_PATH = ROOT / "data" / "swaps" / "click365.csv"
 MATSUI_SWAP_PATH = ROOT / "data" / "swaps" / "matsui_fx.csv"
 FXBROADNET_SWAP_PATH = ROOT / "data" / "swaps" / "fxbroadnet.csv"
 MINFX_SWAP_PATH = ROOT / "data" / "swaps" / "minfx.csv"
@@ -190,6 +192,9 @@ def refresh_hirose(today: date, *, start: date) -> list[dict[str, str]]:
 
 def refresh_jfx(today: date, *, start: date) -> list[dict[str, str]]:
     existing = load_csv(JFX_SWAP_PATH)
+    for row in existing:
+        if row.get("pair") == "HUF/JPY":
+            row["unit"] = "100000"
     print(f"Collecting JFX history from {start}...")
     records = collect_jfx_history(start=start, today_jst=today)
     pair_count = len({record.pair for record in records})
@@ -206,6 +211,12 @@ def refresh_sbi(
     start: date,
 ) -> list[dict[str, str]]:
     existing = load_csv(SBI_SWAP_PATH)
+    # Historical rows created before the KRW quote-unit fix treated the
+    # 10,000 displayed units as 10,000 KRW. At SBI one displayed KRW unit
+    # represents 100 KRW, so those rows actually correspond to 1,000,000 KRW.
+    for row in existing:
+        if row.get("pair") == "KRW/JPY":
+            row["unit"] = "1000000"
     month_start = start if full or not existing else previous_month(today)
     incoming: list[dict[str, str]] = []
     current_pair_count = 0
@@ -224,6 +235,40 @@ def refresh_sbi(
 
     merged = merge_swaps(existing, incoming)
     write_csv(SBI_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
+
+
+def refresh_click365(
+    today: date,
+    *,
+    full: bool,
+    start: date,
+) -> list[dict[str, str]]:
+    existing = load_csv(CLICK365_SWAP_PATH)
+    period_start = start if full or not existing else previous_month(today)
+    incoming: list[dict[str, str]] = []
+    current_pair_count = 0
+
+    cursor = period_start
+    while cursor <= today:
+        period_end = min(date(cursor.year, 12, 31), today)
+        print(f"Collecting Click365 {cursor}..{period_end}...")
+        records = collect_click365_period(cursor, period_end, today_jst=today)
+        pair_count = len({record.pair for record in records})
+        print(f"  {len(records)} rows / {pair_count} pairs")
+        if period_end == today:
+            current_pair_count = pair_count
+        incoming.extend(record.to_csv_row() for record in records)
+        cursor = date(cursor.year + 1, 1, 1)
+
+    if current_pair_count < 20:
+        raise RuntimeError(
+            "Click365 current-period collector returned fewer than 20 pairs; "
+            "refusing to publish possibly broken exchange data."
+        )
+
+    merged = merge_swaps(existing, incoming)
+    write_csv(CLICK365_SWAP_PATH, merged, SWAP_FIELDS)
     return merged
 
 
@@ -436,6 +481,12 @@ def main() -> int:
         help="GMO Gaika historical backfill start month (default: 2022-01).",
     )
     parser.add_argument(
+        "--click365-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_CLICK365_START_MONTH", "2021-01")),
+        help="Click365 historical backfill start month (default: 2021-01).",
+    )
+    parser.add_argument(
         "--matsui-start",
         type=parse_month,
         default=parse_month(os.environ.get("TRUERATE_MATSUI_START_MONTH", "2023-01")),
@@ -488,6 +539,7 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
+    click365_swaps = refresh_click365(today, full=args.full, start=args.click365_start)
     matsui_swaps = refresh_matsui(today, full=args.full, start=args.matsui_start)
     fxbroadnet_swaps = refresh_fxbroadnet(today, full=args.full, start=args.fxbroadnet_start)
     minfx_swaps, minfx_light_swaps = refresh_minfx(today)
@@ -500,7 +552,8 @@ def main() -> int:
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
     swaps = (
-        matsui_swaps
+        click365_swaps
+        + matsui_swaps
         + fxbroadnet_swaps
         + minfx_swaps
         + minfx_light_swaps

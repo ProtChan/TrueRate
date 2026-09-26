@@ -23,6 +23,7 @@ PAIRS = (
     "GBP/AUD", "GBP/CHF", "AUD/NZD", "AUD/CHF",
 )
 SPECIAL_100K = {"ZAR/JPY", "CNH/JPY", "HKD/JPY", "MXN/JPY", "RUB/JPY"}
+KRW_BASE_UNITS = 1_000_000
 DATE_RE = re.compile(r"(\d{1,2})月(\d{1,2})日")
 
 
@@ -93,7 +94,17 @@ def parse_month_html(
             if sp_days_raw is None or sell is None or buy is None:
                 continue
 
-            multiplier = 10.0 if pair in SPECIAL_100K else 1.0
+            if pair == "KRW/JPY":
+                # SBI quotes KRW/JPY per 100 KRW. The history endpoint's
+                # "10,000 currency units" therefore represents 1,000,000 KRW.
+                multiplier = 1.0
+                row_unit = KRW_BASE_UNITS
+            elif pair in SPECIAL_100K:
+                multiplier = 10.0
+                row_unit = 100_000
+            else:
+                multiplier = 1.0
+                row_unit = 10_000
             effective_date = trade_date + timedelta(days=1)
             records.append(
                 SwapRecord(
@@ -104,7 +115,7 @@ def parse_month_html(
                     sp_days=int(sp_days_raw),
                     long_swap_jpy=buy * multiplier,
                     short_swap_jpy=sell * multiplier,
-                    unit=100_000 if pair in SPECIAL_100K else 10_000,
+                    unit=row_unit,
                     status="confirmed" if effective_date <= today_jst else "scheduled",
                     source=source_url,
                     fetched_at=fetched_at,

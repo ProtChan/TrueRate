@@ -4,6 +4,7 @@ TrueRate is a static FX total-return dashboard that separates common market move
 
 Supported brokers/products:
 
+- **くりっく365**
 - **松井証券FX**
 - **FXブロードネット**
 - **みんなのFX**
@@ -51,6 +52,7 @@ The browser rebases broker-to-broker comparisons to a shared visible start date.
 
 ## Data sources
 
+- くりっく365: 東京金融取引所 official historical FX CSV (swap point)
 - 松井証券FX: official yearly swap-history CSV
 - FXブロードネット: official monthly swap-calendar PDF
 - みんなのFX / LIGHT: official public rolling swap calendar
@@ -79,6 +81,7 @@ scripts/
   update_data.py         incremental collection/build pipeline
 
 src/truerate/
+  brokers/click365.py    くりっく365 TFX historical collector
   brokers/matsui_fx.py   松井証券FX yearly CSV collector
   brokers/fxbroadnet.py FXブロードネット monthly PDF collector
   brokers/minfx.py       みんなのFX + LIGHT rolling-calendar parser
@@ -111,6 +114,7 @@ The data workflow runs every day at **09:15 JST**.
 
 On a new data set:
 
+- くりっく365 backfills from `2021-01`
 - 松井証券FX backfills from `2023-01`
 - FXブロードネット backfills from `2023-10`
 - みんなのFX / LIGHT and LIGHT FX / LIGHT import their public rolling calendars and accumulate history daily in TrueRate
@@ -127,6 +131,7 @@ After the initial backfill, monthly-history brokers refresh their recent months.
 Historical starts can be changed with:
 
 ~~~text
+TRUERATE_CLICK365_START_MONTH=YYYY-MM
 TRUERATE_MATSUI_START_MONTH=YYYY-MM
 TRUERATE_FXBROADNET_START_MONTH=YYYY-MM
 TRUERATE_GAITAME_START_MONTH=YYYY-MM

@@ -22,6 +22,7 @@ PAIR_UNITS = {
     "CNH/JPY": 10_000,
     "CZK/JPY": 10_000,
     "THB/JPY": 10_000,
+    "HUF/JPY": 100_000,
 }
 
 

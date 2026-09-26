@@ -403,7 +403,16 @@ def refresh_gmo_click(
     start: date,
 ) -> list[dict[str, str]]:
     existing = load_csv(GMO_CLICK_SWAP_PATH)
-    month_start = start if full or not existing else previous_month(today)
+    dual_currency_pairs = {"EUR/USD", "GBP/USD", "AUD/USD", "NZD/USD"}
+    needs_dual_currency_repair = any(
+        row.get("pair") in dual_currency_pairs
+        and int(float(row.get("sp_days") or 0)) > 0
+        and (row.get("long_swap_jpy") in {"", None} or row.get("short_swap_jpy") in {"", None})
+        for row in existing
+    )
+    if needs_dual_currency_repair:
+        print("Repairing historical GMO Click dual-currency swap rows...")
+    month_start = start if full or not existing or needs_dual_currency_repair else previous_month(today)
     incoming: list[dict[str, str]] = []
     current_pair_count = 0
 

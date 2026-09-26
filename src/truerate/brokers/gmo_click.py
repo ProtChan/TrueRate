@@ -61,16 +61,23 @@ DATE_RE = re.compile(r"(\d{1,2})月(\d{1,2})日")
 
 def _number(text: str) -> float | None:
     cleaned = (
-        text.replace(",", "")
-        .replace("円", "")
-        .replace("−", "-")
+        text.replace("−", "-")
         .replace("－", "-")
+        .replace("円", "")
         .strip()
     )
     if cleaned in {"", "-", "—", "―"}:
         return None
+
+    # For EUR/USD, GBP/USD, AUD/USD and NZD/USD GMO Click displays both
+    # the JPY cash amount and the optional USD-settlement amount in one cell,
+    # e.g. "33 $0.21" or "-33 -$0.21". TrueRate is JPY-normalized, so take
+    # the first displayed numeric amount (the JPY value).
+    match = re.search(r"[+-]?\d[\d,]*(?:\.\d+)?", cleaned)
+    if not match:
+        return None
     try:
-        return float(cleaned)
+        return float(match.group(0).replace(",", ""))
     except ValueError:
         return None
 

@@ -6,6 +6,7 @@ const state = {
   period: "1Y",
   customStart: null,
   brokers: new Set(),
+  brokerSelectionDirty: false,
   chart: null,
   rankingMetric: "totalReturn",
   rankingDirection: "desc",
@@ -244,6 +245,57 @@ function longestSpotReference() {
   return rebase(longest.points.filter((point) => point.date >= oldestBrokerStart));
 }
 
+function defaultBrokerSelection() {
+  const pairSeries = state.data.series[state.pair] || {};
+  const entries = Object.entries(pairSeries);
+  if (!entries.length) return new Set();
+
+  let longestBroker = null;
+  let earliestStart = null;
+  let bestSwapBroker = null;
+  let bestSwap = -Infinity;
+
+  for (const [broker, item] of entries) {
+    const rawPoints = item.points || [];
+    if (!rawPoints.length) continue;
+
+    const start = rawPoints[0].date;
+    if (earliestStart === null || start < earliestStart) {
+      earliestStart = start;
+      longestBroker = broker;
+    }
+
+    const points = periodPoints(rawPoints);
+    if (points.length < 2) continue;
+    const first = points[0];
+    const last = points.at(-1);
+    const longSwap = last.cum_long_swap_jpy - first.cum_long_swap_jpy;
+    const shortSwap = last.cum_short_swap_jpy - first.cum_short_swap_jpy;
+    const candidateSwap =
+      state.side === "long" ? longSwap :
+      state.side === "short" ? shortSwap :
+      Math.max(longSwap, shortSwap);
+
+    if (Number.isFinite(candidateSwap) && candidateSwap > bestSwap) {
+      bestSwap = candidateSwap;
+      bestSwapBroker = broker;
+    }
+  }
+
+  const selected = new Set();
+  if (bestSwapBroker) selected.add(bestSwapBroker);
+  if (longestBroker) selected.add(longestBroker);
+
+  // Defensive fallback if the pair has data but no usable swap window.
+  if (!selected.size && entries[0]) selected.add(entries[0][0]);
+  return selected;
+}
+
+function resetDefaultBrokers() {
+  state.brokerSelectionDirty = false;
+  state.brokers = defaultBrokerSelection();
+}
+
 function renderBrokerButtons() {
   const pairSeries = state.data.series[state.pair] || {};
   const container = $("brokerButtons");
@@ -256,6 +308,7 @@ function renderBrokerButtons() {
     button.style.setProperty("--broker-color", brokerColor(broker.id));
     button.className = state.brokers.has(broker.id) ? "active" : "";
     button.addEventListener("click", () => {
+      state.brokerSelectionDirty = true;
       if (state.brokers.has(broker.id) && state.brokers.size > 1) {
         state.brokers.delete(broker.id);
       } else {
@@ -825,8 +878,7 @@ function openPairInDashboard(pair) {
   state.pair = pair;
   $("pairSelect").value = pair;
   state.view = "dashboard";
-  const available = Object.keys(state.data.series[pair] || {});
-  state.brokers = new Set(available);
+  resetDefaultBrokers();
   updateDateBounds();
   resetSortsForSide();
   renderView();
@@ -873,13 +925,13 @@ function setupControls() {
   const preferred = ["USD/JPY", "TRY/JPY", "CHF/TRY", "USD/CHF"];
   state.pair = preferred.find((pair) => state.data.pairs.includes(pair)) || state.data.pairs[0];
   pairSelect.value = state.pair;
-  state.brokers = new Set(Object.keys(state.data.series[state.pair] || {}));
+  resetDefaultBrokers();
 
   pairSelect.addEventListener("change", () => {
     state.pair = pairSelect.value;
     state.customStart = null;
     $("customStartDate").value = "";
-    state.brokers = new Set(Object.keys(state.data.series[state.pair] || {}));
+    resetDefaultBrokers();
     resetSortsForSide();
     updateDateBounds();
     renderView();
@@ -897,6 +949,9 @@ function setupControls() {
     button.addEventListener("click", () => {
       state.side = button.dataset.side;
       resetSortsForSide();
+      if (state.view === "dashboard" && !state.brokerSelectionDirty) {
+        state.brokers = defaultBrokerSelection();
+      }
       renderView();
     });
   });
@@ -906,6 +961,9 @@ function setupControls() {
       state.period = button.dataset.period;
       state.customStart = null;
       $("customStartDate").value = "";
+      if (state.view === "dashboard" && !state.brokerSelectionDirty) {
+        state.brokers = defaultBrokerSelection();
+      }
       renderView();
     });
   });
@@ -931,6 +989,9 @@ function setupControls() {
   $("customStartDate").addEventListener("change", (event) => {
     state.customStart = event.target.value || null;
     if (!state.customStart) state.period = "1Y";
+    if (state.view === "dashboard" && !state.brokerSelectionDirty) {
+      state.brokers = defaultBrokerSelection();
+    }
     renderView();
   });
 
@@ -938,6 +999,9 @@ function setupControls() {
     state.customStart = null;
     state.period = "1Y";
     $("customStartDate").value = "";
+    if (state.view === "dashboard" && !state.brokerSelectionDirty) {
+      state.brokers = defaultBrokerSelection();
+    }
     renderView();
   });
 

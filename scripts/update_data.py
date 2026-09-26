@@ -28,6 +28,7 @@ from truerate.brokers.gmo_click import (
 )
 from truerate.brokers.gmo_gaika import collect_month as collect_gmo_gaika_month, iter_months
 from truerate.brokers.triauto import collect_month as collect_triauto_month
+from truerate.margins import build_margin_requirements
 from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
@@ -633,12 +634,22 @@ def main() -> int:
     rates = merge_rates(existing_rates, incoming_rates)
     write_csv(RATE_PATH, rates, RATE_FIELDS)
 
+    print("Collecting current margin requirements...")
+    margin_requirements = build_margin_requirements(today)
+    click365_margin = margin_requirements.get("click365", {})
+    print(
+        "  Click365 margin schedule "
+        f"{click365_margin.get('effective_start')}..{click365_margin.get('effective_end')} "
+        f"/ {len(click365_margin.get('per_pair_jpy', {}))} pairs"
+    )
+
     payload = build_site_payload(
         swaps,
         rates,
         generated_at=now.isoformat(timespec="seconds"),
         today=today,
         unit=10_000,
+        margin_requirements=margin_requirements,
     )
     SITE_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
     temp_json = SITE_DATA_PATH.with_suffix(".json.tmp")

@@ -16,6 +16,7 @@ const state = {
   rankingMetric: "totalReturn",
   rankingDirection: "desc",
   arbitrageDirection: "desc",
+  arbitrageYieldBasis: "notional",
   tableSort: { key: "total", direction: "desc" },
 };
 
@@ -1279,6 +1280,27 @@ function arbitragePairCandidates(pair) {
     .filter((item) => item.points.length >= 2);
 }
 
+function requiredMarginForLeg(broker, pair, startPoint) {
+  const requirements = state.data.metadata.margin_requirements || {};
+  const initialNotionalJpy = state.data.metadata.unit * startPoint.base_jpy;
+
+  if (broker === "click365") {
+    const exact = requirements.click365?.per_pair_jpy?.[pair];
+    if (Number.isFinite(exact)) return exact;
+  }
+
+  const rate = requirements.margin_rate_by_broker?.[broker]
+    ?? requirements.default_otc_margin_rate
+    ?? 0.04;
+  return initialNotionalJpy * rate;
+}
+
+function arbitrageYieldValue(candidate) {
+  return state.arbitrageYieldBasis === "margin"
+    ? candidate.annualizedMarginYield
+    : candidate.annualizedNotionalYield;
+}
+
 function arbitrageForPair(pair) {
   const series = arbitragePairCandidates(pair);
   if (series.length < 2) return null;
@@ -1301,12 +1323,34 @@ function arbitrageForPair(pair) {
       const sellSwap = sell.short.cumulativeSwap;
       const netSwap = buySwap + sellSwap;
       const startPoint = buy.points[0];
+      const sellStartPoint = sell.points[0];
       const endPoint = buy.points.at(-1);
       const holdingDays = Math.max(1, daysBetween(startPoint.date, endPoint.date));
+
       const initialNotionalJpy = state.data.metadata.unit * startPoint.base_jpy;
-      const spreadPct = initialNotionalJpy > 0 ? (netSwap / initialNotionalJpy) * 100 : null;
-      const annualizedSpread = Number.isFinite(spreadPct)
-        ? spreadPct * (365 / holdingDays)
+      const notionalPct = initialNotionalJpy > 0
+        ? (netSwap / initialNotionalJpy) * 100
+        : null;
+      const annualizedNotionalYield = Number.isFinite(notionalPct)
+        ? notionalPct * (365 / holdingDays)
+        : null;
+
+      const buyRequiredMargin = requiredMarginForLeg(
+        buy.broker,
+        pair,
+        startPoint
+      );
+      const sellRequiredMargin = requiredMarginForLeg(
+        sell.broker,
+        pair,
+        sellStartPoint
+      );
+      const totalRequiredMargin = buyRequiredMargin + sellRequiredMargin;
+      const marginPct = totalRequiredMargin > 0
+        ? (netSwap / totalRequiredMargin) * 100
+        : null;
+      const annualizedMarginYield = Number.isFinite(marginPct)
+        ? marginPct * (365 / holdingDays)
         : null;
 
       const candidate = {
@@ -1316,16 +1360,30 @@ function arbitrageForPair(pair) {
         buySwap,
         sellSwap,
         netSwap,
-        annualizedSpread,
+        buyRequiredMargin,
+        sellRequiredMargin,
+        totalRequiredMargin,
+        annualizedNotionalYield,
+        annualizedMarginYield,
         startDate: startPoint.date,
         endDate: endPoint.date,
         holdingDays,
       };
-      if (!best || candidate.netSwap > best.netSwap) best = candidate;
+
+      const candidateYield = arbitrageYieldValue(candidate);
+      const bestYield = best ? arbitrageYieldValue(best) : null;
+      if (
+        !best ||
+        (Number.isFinite(candidateYield) && !Number.isFinite(bestYield)) ||
+        (Number.isFinite(candidateYield) && candidateYield > bestYield)
+      ) {
+        best = candidate;
+      }
     }
   }
   return best;
 }
+
 
 function arbitrageRows() {
   const rows = state.data.pairs
@@ -1333,8 +1391,8 @@ function arbitrageRows() {
     .filter(Boolean);
 
   rows.sort((a, b) => {
-    const av = a.annualizedSpread;
-    const bv = b.annualizedSpread;
+    const av = arbitrageYieldValue(a);
+    const bv = arbitrageYieldValue(b);
     if (!Number.isFinite(av) && !Number.isFinite(bv)) return a.pair.localeCompare(b.pair);
     if (!Number.isFinite(av)) return 1;
     if (!Number.isFinite(bv)) return -1;
@@ -1349,7 +1407,18 @@ function renderArbitrage() {
   body.innerHTML = "";
 
   const rangeLabel = state.customStart ? `From ${formatDate(state.customStart)}` : state.period;
-  $("arbitrageContext").textContent = `${rangeLabel} · best cross-broker pair`;
+  const basisLabel = state.arbitrageYieldBasis === "margin"
+    ? "required-margin yield"
+    : "notional yield";
+  $("arbitrageContext").textContent = `${rangeLabel} · best pair by ${basisLabel}`;
+  $("arbitrageYieldHeader").textContent =
+    state.arbitrageYieldBasis === "margin" ? "Ann. margin" : "Ann. notional";
+  document.querySelectorAll("#arbitrageBasisButtons button").forEach((button) => {
+    button.classList.toggle(
+      "active",
+      button.dataset.arbitrageBasis === state.arbitrageYieldBasis
+    );
+  });
   $("arbitrageDirection").textContent =
     state.arbitrageDirection === "desc" ? "High → Low" : "Low → High";
 
@@ -1364,14 +1433,15 @@ function renderArbitrage() {
       <td class="${valueClass(item.buySwap)}">${formatJpy(item.buySwap)}</td>
       <td class="${valueClass(item.sellSwap)}">${formatJpy(item.sellSwap)}</td>
       <td class="metric-primary ${valueClass(item.netSwap)}">${formatJpy(item.netSwap)}</td>
-      <td class="${valueClass(item.annualizedSpread)}">${formatPct(item.annualizedSpread)}</td>
+      <td>${formatJpy(item.totalRequiredMargin)}</td>
+      <td class="${valueClass(arbitrageYieldValue(item))}">${formatPct(arbitrageYieldValue(item))}</td>
       <td class="coverage-note">${formatDate(item.startDate)}</td>`;
     row.addEventListener("click", () => openPairDetail(item.pair));
     body.appendChild(row);
   });
 
   if (!rows.length) {
-    body.innerHTML = '<tr><td colspan="9" class="ranking-empty">No cross-broker overlap for this range.</td></tr>';
+    body.innerHTML = '<tr><td colspan="10" class="ranking-empty">No cross-broker overlap for this range.</td></tr>';
   }
 }
 
@@ -1548,6 +1618,13 @@ function setupControls() {
   $("rankingDirection").addEventListener("click", () => {
     state.rankingDirection = state.rankingDirection === "desc" ? "asc" : "desc";
     renderPairRanking();
+  });
+
+  document.querySelectorAll("#arbitrageBasisButtons button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.arbitrageYieldBasis = button.dataset.arbitrageBasis;
+      renderArbitrage();
+    });
   });
 
   $("arbitrageDirection").addEventListener("click", () => {

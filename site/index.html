@@ -156,7 +156,13 @@
             <div class="arbitrage-note">
               Same pair · same 10,000 base units · different brokers · spot exposure offset
             </div>
-            <button id="arbitrageDirection" class="sort-direction-button" type="button">High → Low</button>
+            <div class="arbitrage-toolbar-actions">
+              <div class="segmented arbitrage-basis-buttons" id="arbitrageBasisButtons">
+                <button data-arbitrage-basis="notional" class="active">Notional yield</button>
+                <button data-arbitrage-basis="margin">Margin yield</button>
+              </div>
+              <button id="arbitrageDirection" class="sort-direction-button" type="button">High → Low</button>
+            </div>
           </div>
 
           <div class="table-scroll">
@@ -170,7 +176,8 @@
                   <th>Buy swap</th>
                   <th>Sell swap</th>
                   <th>Net swap</th>
-                  <th>Ann. spread</th>
+                  <th>Req. margin</th>
+                  <th id="arbitrageYieldHeader">Ann. notional</th>
                   <th>Since</th>
                 </tr>
               </thead>

@@ -1245,3 +1245,30 @@ body.pair-detail-mode .toolbar {
     min-width: 0;
   }
 }
+
+
+.arbitrage-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.arbitrage-basis-buttons {
+  width: 250px;
+  height: 32px;
+}
+
+.arbitrage-basis-buttons button {
+  font-size: .68rem;
+}
+
+@media (max-width: 760px) {
+  .arbitrage-toolbar-actions {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .arbitrage-basis-buttons {
+    width: 100%;
+  }
+}

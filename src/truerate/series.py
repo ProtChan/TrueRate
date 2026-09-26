@@ -122,6 +122,7 @@ def build_site_payload(
     generated_at: str,
     today: date,
     unit: int = 10_000,
+    margin_requirements: dict | None = None,
 ) -> dict:
     """Build broker/pair daily primitives for browser-side return rebasing."""
     confirmed = [
@@ -138,6 +139,7 @@ def build_site_payload(
                 "unit": unit,
                 "rate_provider": "Frankfurter blended official-source reference rates",
                 "swap_effective_rule": "broker calendar display date + 1 calendar day (JST)",
+                "margin_requirements": margin_requirements or {},
             },
             "brokers": list(BROKERS.values()),
             "pairs": [],
@@ -240,6 +242,7 @@ def build_site_payload(
                 "FX PnL is fixed base-unit PnL converted from quote currency to JPY "
                 "at each day's reference rate; broker swap cashflow is added separately."
             ),
+            "margin_requirements": margin_requirements or {},
         },
         "brokers": [BROKERS[key] for key in sorted(BROKERS)],
         "pairs": sorted(available_pairs),

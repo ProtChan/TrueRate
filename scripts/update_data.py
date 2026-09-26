@@ -18,12 +18,14 @@ from truerate.brokers.gmo_click import (
     collect_month as collect_gmo_click_month,
 )
 from truerate.brokers.gmo_gaika import collect_month as collect_gmo_gaika_month, iter_months
+from truerate.brokers.triauto import collect_month as collect_triauto_month
 from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
 GMO_GAIKA_SWAP_PATH = ROOT / "data" / "swaps" / "gmo_gaika.csv"
 GMO_CLICK_SWAP_PATH = ROOT / "data" / "swaps" / "gmo_click.csv"
+TRIAUTO_SWAP_PATH = ROOT / "data" / "swaps" / "triauto.csv"
 RATE_PATH = ROOT / "data" / "rates" / "usd_reference.csv"
 SITE_DATA_PATH = ROOT / "site" / "data" / "site-data.json"
 
@@ -179,6 +181,37 @@ def refresh_gmo_click(
     return cleaned
 
 
+def refresh_triauto(
+    today: date,
+    *,
+    full: bool,
+    start: date,
+) -> list[dict[str, str]]:
+    existing = load_csv(TRIAUTO_SWAP_PATH)
+    month_start = start if full or not existing else previous_month(today)
+    incoming: list[dict[str, str]] = []
+    current_pair_count = 0
+
+    for year, month in iter_months(month_start, today):
+        print(f"Collecting Triauto FX {year:04d}-{month:02d}...")
+        records = collect_triauto_month(year, month, today_jst=today)
+        pair_count = len({record.pair for record in records})
+        print(f"  {len(records)} rows / {pair_count} pairs")
+        if year == today.year and month == today.month:
+            current_pair_count = pair_count
+        incoming.extend(record.to_csv_row() for record in records)
+
+    if current_pair_count < 28:
+        raise RuntimeError(
+            "Triauto current-month collector returned fewer than 28 active pairs; "
+            "refusing to publish possibly broken source data."
+        )
+
+    merged = merge_swaps(existing, incoming)
+    write_csv(TRIAUTO_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description="Refresh TrueRate data")
     parser.add_argument(
@@ -198,6 +231,12 @@ def main() -> int:
         default=parse_month(os.environ.get("TRUERATE_GMO_CLICK_START_MONTH", "2024-01")),
         help="GMO Click historical backfill start month (default: 2024-01).",
     )
+    parser.add_argument(
+        "--triauto-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_TRIAUTO_START_MONTH", "2024-01")),
+        help="Triauto FX historical backfill start month (default: 2024-01).",
+    )
     args = parser.parse_args()
 
     now = datetime.now(tz=JST)
@@ -205,7 +244,8 @@ def main() -> int:
 
     gaika_swaps = refresh_gmo_gaika(today, full=args.full, start=args.start)
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
-    swaps = gaika_swaps + click_swaps
+    triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
+    swaps = gaika_swaps + click_swaps + triauto_swaps
 
     confirmed_swaps = [
         row

@@ -1,0 +1,56 @@
+name: Inspect Rakuten FX swap source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-rakuten.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - name: Inspect Rakuten page
+        run: |
+          python - <<'PY'
+          import requests,re
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+          h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en-US;q=0.9,en;q=0.8"}
+          u="https://www.rakuten-sec.co.jp/web/fx/spread_swap/"
+          r=requests.get(u,headers=h,timeout=30)
+          print("PAGE",r.status_code,r.url,len(r.text),r.headers.get("content-type"))
+          r.raise_for_status()
+          r.encoding=r.apparent_encoding or r.encoding
+          soup=BeautifulSoup(r.text,"html.parser")
+          print("SCRIPTS")
+          for sc in soup.find_all("script",src=True):
+              su=urljoin(r.url,sc["src"])
+              print("SCRIPT",su)
+              try:
+                  x=requests.get(su,headers=h,timeout=30)
+                  txt=x.text
+                  if any(k in txt.lower() for k in ("swap","rate","spread","json","api","fetch","ajax")):
+                      print("RELEVANT",len(txt))
+                      for line in txt.splitlines():
+                          if any(k in line.lower() for k in ("swap","json","api","fetch","ajax")):
+                              print("JSLINE",line[:2500])
+              except Exception as e:
+                  print("ERR",e)
+          print("INLINE")
+          for sc in soup.find_all("script"):
+              if sc.get("src"): continue
+              txt=sc.get_text("\n")
+              if any(k in txt.lower() for k in ("swap","rate","spread","json","api","fetch","ajax")):
+                  print("INLINE_SCRIPT",txt[:16000].replace("\n"," | "))
+          print("URLLIKE")
+          for m in re.finditer(r'[^"\'\s<>]{0,120}(?:swap|rate|spread|json|api)[^"\'\s<>]{0,200}',r.text,re.I):
+              print("URLLIKE",m.group(0)[:650])
+          PY

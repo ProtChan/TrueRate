@@ -24,14 +24,7 @@ jobs:
           from bs4 import BeautifulSoup
           from urllib.parse import urljoin
           h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en;q=0.8"}
-          u="https://www.tfx.co.jp/historical/fx/margin.html"
-          r=requests.get(u,headers=h,timeout=30)
-          r.raise_for_status()
-          import re
-          matches=re.findall(r'href=["\\\']([^"\\\']*\\d{8}fxmargin\\.csv)["\\\']',r.text,re.I)
-          if not matches:
-              raise RuntimeError("no personal 25x margin CSV links found")
-          csv_url=urljoin(r.url,matches[0])
+          csv_url="https://www.tfx.co.jp/mkinfo/data/20260921fxmargin.csv"
           print("URL",csv_url)
           c=requests.get(csv_url,headers=h,timeout=30)
           print("STATUS",c.status_code,c.headers.get("content-type"),len(c.content))

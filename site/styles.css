@@ -497,7 +497,7 @@ h2 {
 
 .methodology-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: 1px;
   border-top: 1px solid var(--border);
   background: var(--border);
@@ -1005,6 +1005,58 @@ body.ranking-mode .toolbar {
   }
 
   body.ranking-mode .toolbar {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+.side-badge {
+  display: inline-flex;
+  min-width: 42px;
+  min-height: 22px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  font-size: .62rem;
+  font-weight: 800;
+  letter-spacing: .06em;
+}
+.side-badge.buy {
+  color: var(--positive);
+  background: rgba(82, 220, 168, .07);
+  border-color: rgba(82, 220, 168, .22);
+}
+.side-badge.sell {
+  color: #ff9aaa;
+  background: rgba(255, 122, 138, .07);
+  border-color: rgba(255, 122, 138, .22);
+}
+
+body.arbitrage-mode .toolbar {
+  grid-template-columns: minmax(360px, 1.7fr) minmax(190px, .9fr);
+}
+
+.arbitrage-toolbar {
+  min-height: 51px;
+}
+
+.arbitrage-note {
+  color: var(--muted);
+  font-size: .7rem;
+}
+
+.arbitrage-table {
+  min-width: 1000px;
+}
+
+.arbitrage-table th:nth-child(4),
+.arbitrage-table td:nth-child(4) {
+  text-align: left;
+}
+
+@media (max-width: 680px) {
+  body.arbitrage-mode .toolbar {
     grid-template-columns: 1fr;
   }
 }

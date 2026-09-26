@@ -36,6 +36,7 @@
       <nav class="view-tabs" aria-label="View">
         <button data-view="dashboard" class="active">Dashboard</button>
         <button data-view="ranking">Ranking</button>
+        <button data-view="arbitrage">Arbitrage</button>
       </nav>
 
       <section class="toolbar" id="toolbar" aria-label="Dashboard filters">
@@ -44,7 +45,7 @@
           <select id="pairSelect"></select>
         </div>
 
-        <div class="field">
+        <div class="field" id="sideField">
           <span class="field-label">Side</span>
           <div class="segmented compact-segmented" id="sideButtons">
             <button data-side="long" class="active">Long</button>
@@ -140,6 +141,44 @@
         </section>
       </div>
 
+      <div id="arbitrageView" hidden>
+        <section class="pair-ranking-panel">
+          <header class="panel-header ranking-header">
+            <div>
+              <div class="panel-kicker">SWAP ARBITRAGE</div>
+              <h1>Cross-broker swap spread</h1>
+            </div>
+            <div class="ranking-context" id="arbitrageContext">—</div>
+          </header>
+
+          <div class="ranking-toolbar arbitrage-toolbar">
+            <div class="arbitrage-note">
+              Same pair · same 10,000 base units · different brokers · spot exposure offset
+            </div>
+            <button id="arbitrageDirection" class="sort-direction-button" type="button">High → Low</button>
+          </div>
+
+          <div class="table-scroll">
+            <table class="pair-ranking-table arbitrage-table">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Pair</th>
+                  <th>Buy broker</th>
+                  <th>Sell broker</th>
+                  <th>Buy swap</th>
+                  <th>Sell swap</th>
+                  <th>Net swap</th>
+                  <th>Ann. spread</th>
+                  <th>Since</th>
+                </tr>
+              </thead>
+              <tbody id="arbitrageBody"></tbody>
+            </table>
+          </div>
+        </section>
+      </div>
+
       <details class="methodology">
         <summary>Methodology & data notes</summary>
         <div class="methodology-grid">
@@ -153,7 +192,11 @@
           </div>
           <div>
             <strong>Pair ranking</strong>
-            <p>各通貨ペアで、指定期間を最も長くカバーできる業者群を比較し、選択指標で最良の1社を採用します。その最良業者の値で通貨ペア同士をランキングします。</p>
+            <p>各通貨ペアで、指定期間を最も長くカバーできる業者群を比較します。BOTHではLong/Shortも同時比較し、選択指標で最良の「業者＋売買方向」を1つ採用します。</p>
+          </div>
+          <div>
+            <strong>Swap arbitrage</strong>
+            <p>同一通貨ペアを同量Long/Shortし、異なる業者間で期間中の受取スワップ合計が最大になる組み合わせを表示します。売買スプレッド、約定差、証拠金、将来のスワップ変更は含みません。</p>
           </div>
         </div>
       </details>

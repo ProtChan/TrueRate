@@ -9,10 +9,12 @@ const state = {
   chart: null,
   rankingMetric: "totalReturn",
   rankingDirection: "desc",
+  arbitrageDirection: "desc",
   tableSort: { key: "total", direction: "desc" },
 };
 
 const BROKER_COLORS = {
+  click365: "#c084fc",
   matsui_fx: "#38bdf8",
   fxbroadnet: "#facc15",
   gaitame_com: "#57e3b4",
@@ -512,14 +514,24 @@ function rankingPairCandidates(pair) {
   }
   if (!candidates.length) return [];
 
-  // Keep the longest available requested window for this pair. Brokers whose
-  // history starts later do not shorten the ranking period for everyone else.
+  // Compare only brokers that cover the longest available requested window.
   const pairStart = candidates.map((item) => item.points[0].date).sort()[0];
-  const eligible = candidates.filter((item) => item.points[0].date === pairStart);
+  const latestEnd = candidates.map((item) => item.points.at(-1).date).sort().at(-1);
+  const eligible = candidates.filter(
+    (item) => item.points[0].date === pairStart && item.points.at(-1).date === latestEnd
+  );
 
   return eligible
     .map((item) => ({ broker: item.broker, points: rebase(item.points, pairStart) }))
     .filter((item) => item.points.length >= 2);
+}
+
+function metricComesFirst(a, b, key, best) {
+  const av = a?.[key];
+  const bv = b?.[key];
+  if (!Number.isFinite(av)) return false;
+  if (!Number.isFinite(bv)) return true;
+  return best === "min" ? av < bv : av > bv;
 }
 
 function bestBrokerForPair(pair, side) {
@@ -541,9 +553,18 @@ function bestBrokerForPair(pair, side) {
   return { pair, ...rows[0] };
 }
 
+function bestDirectionForPair(pair) {
+  const metricDef = RANKING_METRICS[state.rankingMetric];
+  const long = bestBrokerForPair(pair, "long");
+  const short = bestBrokerForPair(pair, "short");
+  if (!long) return short;
+  if (!short) return long;
+  return metricComesFirst(short, long, state.rankingMetric, metricDef.best) ? short : long;
+}
+
 function pairRankingRows(side) {
   const rows = state.data.pairs
-    .map((pair) => bestBrokerForPair(pair, side))
+    .map((pair) => side === "both" ? bestDirectionForPair(pair) : bestBrokerForPair(pair, side))
     .filter(Boolean);
 
   rows.sort((a, b) => {
@@ -557,21 +578,29 @@ function pairRankingRows(side) {
   return rows;
 }
 
+function sideBadge(side) {
+  const sell = side === "short";
+  return `<span class="side-badge ${sell ? "sell" : "buy"}">${sell ? "SELL" : "BUY"}</span>`;
+}
+
 function renderPairRankingColumn(side) {
   const metricDef = RANKING_METRICS[state.rankingMetric];
   const rows = pairRankingRows(side);
   const column = document.createElement("div");
   column.className = "pair-ranking-column";
+  const scopeText = side === "both"
+    ? `Each pair uses its best broker + BUY/SELL for ${metricDef.label}`
+    : `Each pair uses its best ${side === "long" ? "BUY" : "SELL"} broker for ${metricDef.label}`;
   column.innerHTML = `
     <div class="pair-ranking-side">
-      <strong>${side.toUpperCase()}</strong>
-      <span>Each pair uses its best ${metricDef.label} broker</span>
+      <strong>${side === "both" ? "BUY + SELL" : (side === "long" ? "BUY" : "SELL")}</strong>
+      <span>${scopeText}</span>
     </div>
     <div class="table-scroll">
       <table class="pair-ranking-table">
         <thead>
           <tr>
-            <th>#</th><th>Pair</th><th>Best broker</th>
+            <th>#</th><th>Pair</th><th>Side</th><th>Best broker</th>
             <th>${metricDef.label}</th><th>Total Return</th><th>Swap</th>
             <th>Max DD</th><th>Volatility</th><th>Since</th>
           </tr>
@@ -587,6 +616,7 @@ function renderPairRankingColumn(side) {
     row.innerHTML = `
       <td class="pair-rank">#${index + 1}</td>
       <td class="pair-name">${metric.pair}</td>
+      <td>${sideBadge(metric.side)}</td>
       <td><span class="best-broker"><span class="series-dot" style="--series-color:${brokerColor(metric.broker)}"></span>${brokerName(metric.broker)}</span></td>
       <td class="metric-primary ${valueClass(metric[state.rankingMetric])}">${metricDef.format(metric[state.rankingMetric])}</td>
       <td class="${valueClass(metric.totalReturn)}">${formatPct(metric.totalReturn)}</td>
@@ -615,13 +645,103 @@ function renderPairRanking() {
 
   const content = $("pairRankingContent");
   content.innerHTML = "";
-  content.classList.toggle("both", state.side === "both");
+  content.classList.remove("both");
+  content.appendChild(renderPairRankingColumn(state.side));
+}
 
-  if (state.side === "both") {
-    content.appendChild(renderPairRankingColumn("long"));
-    content.appendChild(renderPairRankingColumn("short"));
-  } else {
-    content.appendChild(renderPairRankingColumn(state.side));
+function arbitrageForPair(pair) {
+  const series = rankingPairCandidates(pair);
+  if (series.length < 2) return null;
+
+  const legs = series
+    .map((item) => ({
+      broker: item.broker,
+      points: item.points,
+      long: metricsFor(item, "long"),
+      short: metricsFor(item, "short"),
+    }))
+    .filter((item) => item.long && item.short);
+
+  let best = null;
+  for (const buy of legs) {
+    for (const sell of legs) {
+      if (buy.broker === sell.broker) continue;
+
+      const buySwap = buy.long.cumulativeSwap;
+      const sellSwap = sell.short.cumulativeSwap;
+      const netSwap = buySwap + sellSwap;
+      const startPoint = buy.points[0];
+      const endPoint = buy.points.at(-1);
+      const holdingDays = Math.max(1, daysBetween(startPoint.date, endPoint.date));
+      const initialNotionalJpy = state.data.metadata.unit * startPoint.base_jpy;
+      const spreadPct = initialNotionalJpy > 0 ? (netSwap / initialNotionalJpy) * 100 : null;
+      const annualizedSpread = Number.isFinite(spreadPct)
+        ? spreadPct * (365 / holdingDays)
+        : null;
+
+      const candidate = {
+        pair,
+        buyBroker: buy.broker,
+        sellBroker: sell.broker,
+        buySwap,
+        sellSwap,
+        netSwap,
+        annualizedSpread,
+        startDate: startPoint.date,
+        endDate: endPoint.date,
+        holdingDays,
+      };
+      if (!best || candidate.netSwap > best.netSwap) best = candidate;
+    }
+  }
+  return best;
+}
+
+function arbitrageRows() {
+  const rows = state.data.pairs
+    .map(arbitrageForPair)
+    .filter(Boolean);
+
+  rows.sort((a, b) => {
+    const av = a.annualizedSpread;
+    const bv = b.annualizedSpread;
+    if (!Number.isFinite(av) && !Number.isFinite(bv)) return a.pair.localeCompare(b.pair);
+    if (!Number.isFinite(av)) return 1;
+    if (!Number.isFinite(bv)) return -1;
+    return state.arbitrageDirection === "asc" ? av - bv : bv - av;
+  });
+  return rows;
+}
+
+function renderArbitrage() {
+  const rows = arbitrageRows();
+  const body = $("arbitrageBody");
+  body.innerHTML = "";
+
+  const rangeLabel = state.customStart ? `From ${formatDate(state.customStart)}` : state.period;
+  $("arbitrageContext").textContent = `${rangeLabel} · best cross-broker pair`;
+  $("arbitrageDirection").textContent =
+    state.arbitrageDirection === "desc" ? "High → Low" : "Low → High";
+
+  rows.forEach((item, index) => {
+    const row = document.createElement("tr");
+    row.title = `Open ${item.pair} in Dashboard`;
+    row.innerHTML = `
+      <td class="pair-rank">#${index + 1}</td>
+      <td class="pair-name">${item.pair}</td>
+      <td><span class="best-broker"><span class="series-dot" style="--series-color:${brokerColor(item.buyBroker)}"></span>${brokerName(item.buyBroker)}</span></td>
+      <td><span class="best-broker"><span class="series-dot" style="--series-color:${brokerColor(item.sellBroker)}"></span>${brokerName(item.sellBroker)}</span></td>
+      <td class="${valueClass(item.buySwap)}">${formatJpy(item.buySwap)}</td>
+      <td class="${valueClass(item.sellSwap)}">${formatJpy(item.sellSwap)}</td>
+      <td class="metric-primary ${valueClass(item.netSwap)}">${formatJpy(item.netSwap)}</td>
+      <td class="${valueClass(item.annualizedSpread)}">${formatPct(item.annualizedSpread)}</td>
+      <td class="coverage-note">${formatDate(item.startDate)}</td>`;
+    row.addEventListener("click", () => openPairInDashboard(item.pair));
+    body.appendChild(row);
+  });
+
+  if (!rows.length) {
+    body.innerHTML = '<tr><td colspan="9" class="ranking-empty">No cross-broker overlap for this range.</td></tr>';
   }
 }
 
@@ -653,11 +773,15 @@ function renderDashboard() {
 
 function renderView() {
   const ranking = state.view === "ranking";
+  const arbitrage = state.view === "arbitrage";
   document.body.classList.toggle("ranking-mode", ranking);
-  $("dashboardView").hidden = ranking;
+  document.body.classList.toggle("arbitrage-mode", arbitrage);
+  $("dashboardView").hidden = ranking || arbitrage;
   $("rankingView").hidden = !ranking;
-  $("pairField").hidden = ranking;
-  $("brokerFilterStrip").hidden = ranking;
+  $("arbitrageView").hidden = !arbitrage;
+  $("pairField").hidden = ranking || arbitrage;
+  $("sideField").hidden = arbitrage;
+  $("brokerFilterStrip").hidden = ranking || arbitrage;
 
   document.querySelectorAll("[data-view]").forEach((button) => {
     button.classList.toggle("active", button.dataset.view === state.view);
@@ -668,11 +792,12 @@ function renderView() {
     button.classList.toggle("active", button.dataset.side === state.side);
   });
 
+  updateDateBounds();
   if (ranking) {
-    updateDateBounds();
     renderPairRanking();
+  } else if (arbitrage) {
+    renderArbitrage();
   } else {
-    updateDateBounds();
     renderDashboard();
     requestAnimationFrame(() => state.chart?.resize());
   }
@@ -695,7 +820,7 @@ function updateDateBounds() {
   const starts = [];
   const ends = [];
 
-  if (state.view === "ranking") {
+  if (state.view !== "dashboard") {
     for (const pairSeries of Object.values(state.data.series)) {
       for (const item of Object.values(pairSeries)) {
         if (item?.points?.length) {
@@ -778,6 +903,11 @@ function setupControls() {
   $("rankingDirection").addEventListener("click", () => {
     state.rankingDirection = state.rankingDirection === "desc" ? "asc" : "desc";
     renderPairRanking();
+  });
+
+  $("arbitrageDirection").addEventListener("click", () => {
+    state.arbitrageDirection = state.arbitrageDirection === "desc" ? "asc" : "desc";
+    renderArbitrage();
   });
 
   $("customStartDate").addEventListener("change", (event) => {

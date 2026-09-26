@@ -1,0 +1,34 @@
+name: Verify ranking and arbitrage UI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-arbitrage-ui.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check JavaScript syntax
+        run: node --check site/app.js
+      - name: Check rendered data supports cross-broker arbitrage
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          data=json.loads(Path("site/data/site-data.json").read_text(encoding="utf-8"))
+          multi=[]
+          for pair, brokers in data["series"].items():
+              if len(brokers) >= 2:
+                  multi.append((pair, len(brokers)))
+          assert multi, "No pair has 2+ brokers"
+          multi.sort(key=lambda x:(-x[1],x[0]))
+          print("MULTI_BROKER", multi[:20])
+          print("BROKERS", len(data["brokers"]), "PAIRS", len(data["pairs"]))
+          PY

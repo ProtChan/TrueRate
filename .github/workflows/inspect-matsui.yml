@@ -50,6 +50,19 @@ jobs:
                                   print("MATCH",z[:1000])
               except Exception as e:
                   print("ERR",e)
+          print("CSV_PROBES")
+          for y in (2023,2024,2026):
+              cu=f"https://www.matsui.co.jp/fx/market/past-swap/csv/swap_{y}.csv"
+              cr=requests.get(cu,headers=h,timeout=30)
+              print("CSV",y,cr.status_code,len(cr.content),cr.headers.get("content-type"))
+              for enc in ("utf-8-sig","cp932","shift_jis"):
+                  try:
+                      txt=cr.content.decode(enc)
+                      print("ENC",enc)
+                      print(txt[:9000])
+                      break
+                  except Exception:
+                      pass
           print("HTML_MATCHES")
           for pat in [
               r'https?://[^"\'<> ]+',

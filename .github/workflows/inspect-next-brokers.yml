@@ -32,6 +32,28 @@ jobs:
             "jfx":"https://www.jfx.co.jp/trading_rule/swap/",
           }
 
+          print("\n### SBI POST SAMPLE")
+          sbi_url="https://www.sbifxt.co.jp/fxtaccount/pc/SWHis?RICH=Y"
+          sr=requests.post(sbi_url,headers=H,data={
+              "YEAR":"2026","MONTH":"09",
+              "SELECTED_TERMINAL":"mobileTerminal",
+              "SELECTED_CURRENCY_PAIR":"USDJPY",
+              "SELECTED_CURRENCY_UNIT":"tenThousandCurrencyUnit",
+              "MAX_CURRENCY_PAIR":"34","GUID":"1",
+          },timeout=30)
+          print("SBI_POST",sr.status_code,sr.url,len(sr.text),sr.headers.get("content-type"))
+          print(sr.text[:25000])
+
+          print("\n### HIROSE CURRENT UNITS")
+          hr=requests.get("https://hirose-fx.co.jp/contents/news/Swap",headers=H,timeout=30)
+          hs=BeautifulSoup(hr.text,"html.parser")
+          for table in hs.find_all("table"):
+              headers=[x.get_text(" ",strip=True) for x in table.find_all("th")]
+              if any("1Lot" in h for h in headers):
+                  for tr in table.find_all("tr")[1:]:
+                      cells=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
+                      if len(cells)>=3: print("HUNIT",cells[0],cells[2])
+
           print("\n### EXTRA SOURCES")
           extras=[
               ("sbi_js","https://www.sbifxt.co.jp/market/js/swap_calendar.js?202310310000"),

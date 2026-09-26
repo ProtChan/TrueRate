@@ -40,6 +40,8 @@ jobs:
                       print(s[:700])
           print("\nSAMPLE CSV")
           samples=[
+              "https://www.invast.jp/triauto/service/summary/swap_csv/dailyswap.php?year=2026&month=9",
+              "https://www.invast.jp/swappoint/adddays/adddays.php?year=2026&month=9",
               "https://www.invast.jp/triauto/service/summary/swap_csv/2026/DAILY_SWAP_POINT_LIST_20260924.csv",
               "https://www.invast.jp/triauto/service/summary/swap_csv/2026/DAILY_SWAP_POINT_LIST_20260923.csv",
               "https://www.invast.jp/swappoint/adddays/valuedate_202609.csv",

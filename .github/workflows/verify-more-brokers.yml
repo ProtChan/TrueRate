@@ -1,0 +1,52 @@
+name: Verify additional broker collectors
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-more-brokers.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Verify sources
+        env:
+          PYTHONPATH: src
+        run: |
+          python - <<'PY'
+          from datetime import date
+          import requests
+          from truerate.brokers.minfx import collect_recent_products
+          from truerate.brokers.lightfx import collect_recent_products as collect_lightfx
+          from truerate.brokers.sbi_fx import collect_month
+          from truerate.brokers.hirose import collect_history as collect_hirose
+          from truerate.brokers.jfx import collect_history as collect_jfx
+
+          today=date(2026,9,26)
+          for name,fn in [
+              ("minfx", lambda: collect_recent_products(today_jst=today)),
+              ("lightfx", lambda: collect_lightfx(today_jst=today)),
+              ("sbi", lambda: collect_month(2026,9,today_jst=today)),
+              ("hirose", lambda: collect_hirose(start=date(2026,9,1),today_jst=today)),
+              ("jfx", lambda: collect_jfx(start=date(2026,9,1),today_jst=today)),
+          ]:
+              try:
+                  x=fn()
+                  if isinstance(x, tuple):
+                      parts=[(len(y),len({(r.broker,r.pair) for r in y})) for y in x]
+                      print(name,"OK tuple",parts)
+                  else:
+                      print(name,"OK",len(x),len({r.pair for r in x}),x[:2])
+              except Exception as e:
+                  print(name,"ERROR",type(e).__name__,str(e))
+                  raise
+          PY

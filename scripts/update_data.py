@@ -14,6 +14,7 @@ SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
 from truerate.brokers.gaitame_com import collect_month as collect_gaitame_month
+from truerate.brokers.minfx import collect_recent as collect_minfx_recent
 from truerate.brokers.gmo_click import (
     PAIR_START_DATES as GMO_CLICK_PAIR_START_DATES,
     collect_month as collect_gmo_click_month,
@@ -24,6 +25,7 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
+MINFX_SWAP_PATH = ROOT / "data" / "swaps" / "minfx.csv"
 GAITAME_SWAP_PATH = ROOT / "data" / "swaps" / "gaitame_com.csv"
 GMO_GAIKA_SWAP_PATH = ROOT / "data" / "swaps" / "gmo_gaika.csv"
 GMO_CLICK_SWAP_PATH = ROOT / "data" / "swaps" / "gmo_click.csv"
@@ -110,6 +112,24 @@ def merge_rates(
     for row in incoming:
         merged[(row["date"], row["currency"])] = row
     return sorted(merged.values(), key=lambda row: (row["date"], row["currency"]))
+
+
+def refresh_minfx(today: date) -> list[dict[str, str]]:
+    existing = load_csv(MINFX_SWAP_PATH)
+    print("Collecting MinFX public rolling calendar...")
+    records = collect_minfx_recent(today_jst=today)
+    pair_count = len({record.pair for record in records})
+    print(f"  {len(records)} rows / {pair_count} pairs")
+
+    if pair_count < 30:
+        raise RuntimeError(
+            "MinFX collector returned fewer than 30 standard pairs; "
+            "refusing to publish possibly broken source data."
+        )
+
+    merged = merge_swaps(existing, [record.to_csv_row() for record in records])
+    write_csv(MINFX_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
 
 
 def refresh_gaitame(
@@ -281,11 +301,12 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
+    minfx_swaps = refresh_minfx(today)
     gaitame_swaps = refresh_gaitame(today, full=args.full, start=args.gaitame_start)
     gaika_swaps = refresh_gmo_gaika(today, full=args.full, start=args.start)
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
-    swaps = gaitame_swaps + gaika_swaps + click_swaps + triauto_swaps
+    swaps = minfx_swaps + gaitame_swaps + gaika_swaps + click_swaps + triauto_swaps
 
     confirmed_swaps = [
         row

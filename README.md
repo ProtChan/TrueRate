@@ -4,6 +4,7 @@ TrueRate is a static FX total-return dashboard that separates common market move
 
 Supported brokers:
 
+- **みんなのFX**
 - **外為どっとコム（外貨ネクストネオ）**
 - **GMO外貨**
 - **GMOクリック証券（FXネオ）**
@@ -42,6 +43,7 @@ The browser rebases broker-to-broker comparisons to a shared visible start date.
 
 ## Data sources
 
+- みんなのFX: official public rolling one-month swap calendar
 - 外為どっとコム: official monthly FX swap CSV
 - GMO外貨: official swap calendar
 - GMOクリック証券 FXネオ: official historical swap calendar
@@ -63,6 +65,7 @@ scripts/
   update_data.py         incremental collection/build pipeline
 
 src/truerate/
+  brokers/minfx.py       みんなのFX rolling-calendar collector
   brokers/gaitame_com.py 外為どっとコム collector
   brokers/gmo_gaika.py   GMO外貨 collector
   brokers/gmo_click.py   GMOクリック証券 collector
@@ -88,12 +91,13 @@ The data workflow runs every day at **09:15 JST**.
 
 On a new data set:
 
+- みんなのFX imports the public rolling calendar (officially limited to the most recent month) and then accumulates history daily in TrueRate
 - 外為どっとコム backfills from `2022-01`
 - GMO外貨 backfills from `2022-01`
 - GMOクリック証券 backfills from `2024-01`
 - トライオートFX backfills from `2024-01`
 
-After the initial backfill, the current and previous broker-calendar month are refreshed, merged with historical confirmed values, reference rates are updated, the site payload is rebuilt, and GitHub Pages is deployed in the same workflow.
+After the initial backfill, monthly-history brokers refresh their recent months. みんなのFX refreshes its official rolling one-month calendar and merges those rows into TrueRate's retained history. Historical confirmed values are preserved, reference rates are updated, the site payload is rebuilt, and GitHub Pages is deployed in the same workflow.
 
 Historical starts can be changed with:
 

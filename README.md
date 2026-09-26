@@ -2,9 +2,15 @@
 
 TrueRate is a static FX total-return dashboard that separates common market movement from each broker's actual swap cashflow.
 
-Supported brokers:
+Supported brokers/products:
 
 - **みんなのFX**
+- **みんなのFX LIGHT**
+- **LIGHT FX**
+- **LIGHT FX LIGHT**
+- **SBI FXトレード**
+- **ヒロセ通商 LION FX**
+- **JFX MATRIX TRADER**
 - **外為どっとコム（外貨ネクストネオ）**
 - **GMO外貨**
 - **GMOクリック証券（FXネオ）**
@@ -43,7 +49,11 @@ The browser rebases broker-to-broker comparisons to a shared visible start date.
 
 ## Data sources
 
-- みんなのFX: official public rolling one-month swap calendar
+- みんなのFX / LIGHT: official public rolling swap calendar
+- LIGHT FX / LIGHT: official public rolling swap calendar
+- SBI FXトレード: official monthly swap-history endpoint
+- ヒロセ通商 LION FX: official historical swap CSV
+- JFX MATRIX TRADER: official historical swap CSV
 - 外為どっとコム: official monthly FX swap CSV
 - GMO外貨: official swap calendar
 - GMOクリック証券 FXネオ: official historical swap calendar
@@ -65,7 +75,11 @@ scripts/
   update_data.py         incremental collection/build pipeline
 
 src/truerate/
-  brokers/minfx.py       みんなのFX rolling-calendar collector
+  brokers/minfx.py       みんなのFX + LIGHT rolling-calendar parser
+  brokers/lightfx.py     LIGHT FX + LIGHT rolling-calendar collector
+  brokers/sbi_fx.py      SBI FXトレード monthly-history collector
+  brokers/hirose.py      ヒロセ通商 historical CSV collector
+  brokers/jfx.py         JFX historical CSV collector
   brokers/gaitame_com.py 外為どっとコム collector
   brokers/gmo_gaika.py   GMO外貨 collector
   brokers/gmo_click.py   GMOクリック証券 collector
@@ -91,7 +105,10 @@ The data workflow runs every day at **09:15 JST**.
 
 On a new data set:
 
-- みんなのFX imports the public rolling calendar (officially limited to the most recent month) and then accumulates history daily in TrueRate
+- みんなのFX / LIGHT and LIGHT FX / LIGHT import their public rolling calendars and accumulate history daily in TrueRate
+- SBI FXトレード backfills from `2021-01`
+- ヒロセ通商 LION FX uses official CSV history from `2021-01`
+- JFX MATRIX TRADER uses official CSV history from `2021-01`
 - 外為どっとコム backfills from `2022-01`
 - GMO外貨 backfills from `2022-01`
 - GMOクリック証券 backfills from `2024-01`
@@ -106,6 +123,9 @@ TRUERATE_GAITAME_START_MONTH=YYYY-MM
 TRUERATE_START_MONTH=YYYY-MM
 TRUERATE_GMO_CLICK_START_MONTH=YYYY-MM
 TRUERATE_TRIAUTO_START_MONTH=YYYY-MM
+TRUERATE_SBI_START_MONTH=YYYY-MM
+TRUERATE_HIROSE_START_MONTH=YYYY-MM
+TRUERATE_JFX_START_MONTH=YYYY-MM
 ~~~
 
 ## Run locally
@@ -138,9 +158,17 @@ sp_days
 long_swap_jpy
 short_swap_jpy
 unit
+swap_currency
 status
 source
 fetched_at
 ~~~
 
 The site-data schema is broker-keyed by currency pair, so additional brokers automatically fit the comparison chart.
+
+
+### Non-JPY swap cashflows
+
+Some official broker CSVs publish cross-pair swap in the pair's quote currency rather than JPY.
+TrueRate stores that currency in `swap_currency` and converts the cashflow to JPY on the
+effective date using the same daily reference-rate set used by the spot component.

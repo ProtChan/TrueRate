@@ -14,7 +14,11 @@ SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
 from truerate.brokers.gaitame_com import collect_month as collect_gaitame_month
-from truerate.brokers.minfx import collect_recent as collect_minfx_recent
+from truerate.brokers.hirose import collect_history as collect_hirose_history
+from truerate.brokers.jfx import collect_history as collect_jfx_history
+from truerate.brokers.lightfx import collect_recent_products as collect_lightfx_products
+from truerate.brokers.minfx import collect_recent_products as collect_minfx_products
+from truerate.brokers.sbi_fx import collect_month as collect_sbi_month
 from truerate.brokers.gmo_click import (
     PAIR_START_DATES as GMO_CLICK_PAIR_START_DATES,
     collect_month as collect_gmo_click_month,
@@ -26,6 +30,12 @@ from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
 MINFX_SWAP_PATH = ROOT / "data" / "swaps" / "minfx.csv"
+MINFX_LIGHT_SWAP_PATH = ROOT / "data" / "swaps" / "minfx_light.csv"
+LIGHTFX_SWAP_PATH = ROOT / "data" / "swaps" / "lightfx.csv"
+LIGHTFX_LIGHT_SWAP_PATH = ROOT / "data" / "swaps" / "lightfx_light.csv"
+SBI_SWAP_PATH = ROOT / "data" / "swaps" / "sbi_fx.csv"
+HIROSE_SWAP_PATH = ROOT / "data" / "swaps" / "hirose.csv"
+JFX_SWAP_PATH = ROOT / "data" / "swaps" / "jfx.csv"
 GAITAME_SWAP_PATH = ROOT / "data" / "swaps" / "gaitame_com.csv"
 GMO_GAIKA_SWAP_PATH = ROOT / "data" / "swaps" / "gmo_gaika.csv"
 GMO_CLICK_SWAP_PATH = ROOT / "data" / "swaps" / "gmo_click.csv"
@@ -42,6 +52,7 @@ SWAP_FIELDS = [
     "long_swap_jpy",
     "short_swap_jpy",
     "unit",
+    "swap_currency",
     "status",
     "source",
     "fetched_at",
@@ -114,21 +125,101 @@ def merge_rates(
     return sorted(merged.values(), key=lambda row: (row["date"], row["currency"]))
 
 
-def refresh_minfx(today: date) -> list[dict[str, str]]:
-    existing = load_csv(MINFX_SWAP_PATH)
+def _merge_and_write(
+    path: Path,
+    existing: list[dict[str, str]],
+    records,
+) -> list[dict[str, str]]:
+    merged = merge_swaps(existing, [record.to_csv_row() for record in records])
+    write_csv(path, merged, SWAP_FIELDS)
+    return merged
+
+
+def refresh_minfx(today: date) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    standard_existing = load_csv(MINFX_SWAP_PATH)
+    light_existing = load_csv(MINFX_LIGHT_SWAP_PATH)
     print("Collecting MinFX public rolling calendar...")
-    records = collect_minfx_recent(today_jst=today)
+    standard, light = collect_minfx_products(today_jst=today)
+    standard_count = len({record.pair for record in standard})
+    light_count = len({record.pair for record in light})
+    print(
+        f"  standard: {len(standard)} rows / {standard_count} pairs; "
+        f"LIGHT: {len(light)} rows / {light_count} pairs"
+    )
+    if standard_count < 30 or light_count < 10:
+        raise RuntimeError("MinFX collector returned an unexpectedly small product set.")
+    return (
+        _merge_and_write(MINFX_SWAP_PATH, standard_existing, standard),
+        _merge_and_write(MINFX_LIGHT_SWAP_PATH, light_existing, light),
+    )
+
+
+def refresh_lightfx(today: date) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    standard_existing = load_csv(LIGHTFX_SWAP_PATH)
+    light_existing = load_csv(LIGHTFX_LIGHT_SWAP_PATH)
+    print("Collecting LIGHT FX public rolling calendar...")
+    standard, light = collect_lightfx_products(today_jst=today)
+    standard_count = len({record.pair for record in standard})
+    light_count = len({record.pair for record in light})
+    print(
+        f"  standard: {len(standard)} rows / {standard_count} pairs; "
+        f"LIGHT: {len(light)} rows / {light_count} pairs"
+    )
+    if standard_count < 30 or light_count < 10:
+        raise RuntimeError("LIGHT FX collector returned an unexpectedly small product set.")
+    return (
+        _merge_and_write(LIGHTFX_SWAP_PATH, standard_existing, standard),
+        _merge_and_write(LIGHTFX_LIGHT_SWAP_PATH, light_existing, light),
+    )
+
+
+def refresh_hirose(today: date, *, start: date) -> list[dict[str, str]]:
+    existing = load_csv(HIROSE_SWAP_PATH)
+    print(f"Collecting Hirose LION FX history from {start}...")
+    records = collect_hirose_history(start=start, today_jst=today)
     pair_count = len({record.pair for record in records})
     print(f"  {len(records)} rows / {pair_count} pairs")
+    if pair_count < 40:
+        raise RuntimeError("Hirose collector returned fewer than 40 pairs.")
+    return _merge_and_write(HIROSE_SWAP_PATH, existing, records)
 
-    if pair_count < 30:
-        raise RuntimeError(
-            "MinFX collector returned fewer than 30 standard pairs; "
-            "refusing to publish possibly broken source data."
-        )
 
-    merged = merge_swaps(existing, [record.to_csv_row() for record in records])
-    write_csv(MINFX_SWAP_PATH, merged, SWAP_FIELDS)
+def refresh_jfx(today: date, *, start: date) -> list[dict[str, str]]:
+    existing = load_csv(JFX_SWAP_PATH)
+    print(f"Collecting JFX history from {start}...")
+    records = collect_jfx_history(start=start, today_jst=today)
+    pair_count = len({record.pair for record in records})
+    print(f"  {len(records)} rows / {pair_count} pairs")
+    if pair_count < 35:
+        raise RuntimeError("JFX collector returned fewer than 35 pairs.")
+    return _merge_and_write(JFX_SWAP_PATH, existing, records)
+
+
+def refresh_sbi(
+    today: date,
+    *,
+    full: bool,
+    start: date,
+) -> list[dict[str, str]]:
+    existing = load_csv(SBI_SWAP_PATH)
+    month_start = start if full or not existing else previous_month(today)
+    incoming: list[dict[str, str]] = []
+    current_pair_count = 0
+
+    for year, month in iter_months(month_start, today):
+        print(f"Collecting SBI FX Trade {year:04d}-{month:02d}...")
+        records = collect_sbi_month(year, month, today_jst=today)
+        pair_count = len({record.pair for record in records})
+        print(f"  {len(records)} rows / {pair_count} pairs")
+        if year == today.year and month == today.month:
+            current_pair_count = pair_count
+        incoming.extend(record.to_csv_row() for record in records)
+
+    if current_pair_count < 20:
+        raise RuntimeError("SBI FX Trade current-month collector returned fewer than 20 pairs.")
+
+    merged = merge_swaps(existing, incoming)
+    write_csv(SBI_SWAP_PATH, merged, SWAP_FIELDS)
     return merged
 
 
@@ -291,6 +382,24 @@ def main() -> int:
         help="GMO Click historical backfill start month (default: 2024-01).",
     )
     parser.add_argument(
+        "--sbi-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_SBI_START_MONTH", "2021-01")),
+        help="SBI FX Trade historical backfill start month (default: 2021-01).",
+    )
+    parser.add_argument(
+        "--hirose-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_HIROSE_START_MONTH", "2021-01")),
+        help="Hirose historical CSV start month (default: 2021-01).",
+    )
+    parser.add_argument(
+        "--jfx-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_JFX_START_MONTH", "2021-01")),
+        help="JFX historical CSV start month (default: 2021-01).",
+    )
+    parser.add_argument(
         "--triauto-start",
         type=parse_month,
         default=parse_month(os.environ.get("TRUERATE_TRIAUTO_START_MONTH", "2024-01")),
@@ -301,12 +410,28 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
-    minfx_swaps = refresh_minfx(today)
+    minfx_swaps, minfx_light_swaps = refresh_minfx(today)
+    lightfx_swaps, lightfx_light_swaps = refresh_lightfx(today)
+    sbi_swaps = refresh_sbi(today, full=args.full, start=args.sbi_start)
+    hirose_swaps = refresh_hirose(today, start=args.hirose_start)
+    jfx_swaps = refresh_jfx(today, start=args.jfx_start)
     gaitame_swaps = refresh_gaitame(today, full=args.full, start=args.gaitame_start)
     gaika_swaps = refresh_gmo_gaika(today, full=args.full, start=args.start)
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
-    swaps = minfx_swaps + gaitame_swaps + gaika_swaps + click_swaps + triauto_swaps
+    swaps = (
+        minfx_swaps
+        + minfx_light_swaps
+        + lightfx_swaps
+        + lightfx_light_swaps
+        + sbi_swaps
+        + hirose_swaps
+        + jfx_swaps
+        + gaitame_swaps
+        + gaika_swaps
+        + click_swaps
+        + triauto_swaps
+    )
 
     confirmed_swaps = [
         row
@@ -324,15 +449,31 @@ def main() -> int:
     currencies = {"JPY"}
     for row in swaps:
         base, quote = row["pair"].split("/", 1)
-        currencies.update({base.upper(), quote.upper()})
+        swap_currency = (row.get("swap_currency") or "JPY").upper()
+        currencies.update({base.upper(), quote.upper(), swap_currency})
     currencies.discard("USD")
 
     existing_rates = load_csv(RATE_PATH)
     existing_currencies = {row["currency"] for row in existing_rates}
+    earliest_rate_by_currency: dict[str, date] = {}
+    for row in existing_rates:
+        currency = row["currency"]
+        row_date = date.fromisoformat(row["date"])
+        previous = earliest_rate_by_currency.get(currency)
+        if previous is None or row_date < previous:
+            earliest_rate_by_currency[currency] = row_date
+
     incoming_rates: list[dict[str, str]] = []
 
     for currency in sorted(currencies):
-        if args.full or not existing_rates or currency not in existing_currencies:
+        earliest_existing = earliest_rate_by_currency.get(currency)
+        if (
+            args.full
+            or not existing_rates
+            or currency not in existing_currencies
+            or earliest_existing is None
+            or earliest_existing > rate_history_start
+        ):
             currency_start = rate_history_start
         else:
             currency_start = max(rate_history_start, today - timedelta(days=10))

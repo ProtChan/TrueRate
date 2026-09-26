@@ -4,6 +4,7 @@ TrueRate is a static FX total-return dashboard that separates common market move
 
 Supported brokers:
 
+- **外為どっとコム（外貨ネクストネオ）**
 - **GMO外貨**
 - **GMOクリック証券（FXネオ）**
 - **トライオートFX**
@@ -37,10 +38,11 @@ Total Return Index
   = 100 + Total PnL JPY / initial base-currency notional in JPY × 100
 ~~~
 
-The browser rebases every broker to 100 at the first day of the selected 1M / 3M / 1Y / 3Y / MAX period. Cross-broker lines therefore share the same visible start date.
+The browser rebases broker-to-broker comparisons to a shared visible start date. Spot-only is generated independently from the selected broker with the longest available history, so MAX can retain the longest market-only comparison even when other brokers have shorter histories.
 
 ## Data sources
 
+- 外為どっとコム: official monthly FX swap CSV
 - GMO外貨: official swap calendar
 - GMOクリック証券 FXネオ: official historical swap calendar
 - トライオートFX: official monthly swap-calendar backend and settlement-day backend
@@ -61,6 +63,7 @@ scripts/
   update_data.py         incremental collection/build pipeline
 
 src/truerate/
+  brokers/gaitame_com.py 外為どっとコム collector
   brokers/gmo_gaika.py   GMO外貨 collector
   brokers/gmo_click.py   GMOクリック証券 collector
   brokers/triauto.py     トライオートFX collector
@@ -85,6 +88,7 @@ The data workflow runs every day at **09:15 JST**.
 
 On a new data set:
 
+- 外為どっとコム backfills from `2022-01`
 - GMO外貨 backfills from `2022-01`
 - GMOクリック証券 backfills from `2024-01`
 - トライオートFX backfills from `2024-01`
@@ -94,6 +98,7 @@ After the initial backfill, the current and previous broker-calendar month are r
 Historical starts can be changed with:
 
 ~~~text
+TRUERATE_GAITAME_START_MONTH=YYYY-MM
 TRUERATE_START_MONTH=YYYY-MM
 TRUERATE_GMO_CLICK_START_MONTH=YYYY-MM
 TRUERATE_TRIAUTO_START_MONTH=YYYY-MM
@@ -113,7 +118,7 @@ Then open `http://localhost:8000`.
 To force a full refresh:
 
 ~~~bash
-python scripts/update_data.py --full --start 2022-01 --gmo-click-start 2024-01 --triauto-start 2024-01
+python scripts/update_data.py --full --gaitame-start 2022-01 --start 2022-01 --gmo-click-start 2024-01 --triauto-start 2024-01
 ~~~
 
 ## Adding another broker

@@ -82,7 +82,7 @@ function rebase(points, commonStartDate = null) {
   });
 }
 
-function activeBrokerSeries() {
+function activeBrokerCandidates() {
   const pairSeries = state.data.series[state.pair] || {};
   const candidates = [];
 
@@ -92,11 +92,14 @@ function activeBrokerSeries() {
     const points = periodPoints(item.points);
     if (points.length) candidates.push({ broker, points });
   }
+  return candidates;
+}
 
+function activeBrokerSeries() {
+  const candidates = activeBrokerCandidates();
   if (!candidates.length) return [];
 
-  // Broker comparison must use one identical visible holding period.
-  // A broker with shorter history therefore determines the common start.
+  // Broker-to-broker comparison uses one identical visible holding period.
   const commonStartDate = candidates
     .map((item) => item.points[0].date)
     .sort()
@@ -108,6 +111,21 @@ function activeBrokerSeries() {
       points: rebase(item.points, commonStartDate),
     }))
     .filter((item) => item.points.length);
+}
+
+function longestSpotReference() {
+  const candidates = activeBrokerCandidates();
+  if (!candidates.length) return [];
+
+  // Spot-only is independent from the broker overlap window. Use the active
+  // broker with the earliest available date so MAX can always show the
+  // longest available market-only history.
+  const longest = candidates.reduce((best, item) => {
+    if (!best) return item;
+    return item.points[0].date < best.points[0].date ? item : best;
+  }, null);
+
+  return rebase(longest.points);
 }
 
 function renderBrokerButtons() {
@@ -172,7 +190,7 @@ function renderMetrics(series) {
   }
 }
 
-function renderChart(series) {
+function renderChart(series, spotReference) {
   if (!window.echarts) {
     throw new Error("EChartsを読み込めませんでした。ネットワーク接続を確認してください。");
   }
@@ -206,16 +224,25 @@ function renderChart(series) {
     }
   }
 
-  if (series.length && state.side !== "both") {
-    const reference = series[0].points;
-    const key = state.side === "long" ? "spotLongIndex" : "spotShortIndex";
-    chartSeries.push({
-      name: "Spot only",
-      type: "line",
-      showSymbol: false,
-      lineStyle: { width: 1.4, type: "dotted", opacity: 0.75 },
-      data: reference.map((point) => [point.date, point[key]]),
-    });
+  if (spotReference.length) {
+    if (state.side === "long" || state.side === "both") {
+      chartSeries.push({
+        name: state.side === "both" ? "Spot only Long" : "Spot only",
+        type: "line",
+        showSymbol: false,
+        lineStyle: { width: 1.4, type: "dotted", opacity: 0.75 },
+        data: spotReference.map((point) => [point.date, point.spotLongIndex]),
+      });
+    }
+    if (state.side === "short" || state.side === "both") {
+      chartSeries.push({
+        name: state.side === "both" ? "Spot only Short" : "Spot only",
+        type: "line",
+        showSymbol: false,
+        lineStyle: { width: 1.4, type: "dotted", opacity: 0.75 },
+        data: spotReference.map((point) => [point.date, point.spotShortIndex]),
+      });
+    }
   }
 
   state.chart.setOption(
@@ -260,8 +287,9 @@ function renderChart(series) {
 function render() {
   renderBrokerButtons();
   const series = activeBrokerSeries();
+  const spotReference = longestSpotReference();
   renderMetrics(series);
-  renderChart(series);
+  renderChart(series, spotReference);
   $("chartTitle").textContent = `${state.pair} · ${state.side.toUpperCase()} · ${state.period}`;
 
   document.querySelectorAll("#sideButtons button").forEach((button) => {

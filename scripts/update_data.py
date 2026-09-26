@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
+from truerate.brokers.gaitame_com import collect_month as collect_gaitame_month
 from truerate.brokers.gmo_click import (
     PAIR_START_DATES as GMO_CLICK_PAIR_START_DATES,
     collect_month as collect_gmo_click_month,
@@ -23,6 +24,7 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
+GAITAME_SWAP_PATH = ROOT / "data" / "swaps" / "gaitame_com.csv"
 GMO_GAIKA_SWAP_PATH = ROOT / "data" / "swaps" / "gmo_gaika.csv"
 GMO_CLICK_SWAP_PATH = ROOT / "data" / "swaps" / "gmo_click.csv"
 TRIAUTO_SWAP_PATH = ROOT / "data" / "swaps" / "triauto.csv"
@@ -108,6 +110,37 @@ def merge_rates(
     for row in incoming:
         merged[(row["date"], row["currency"])] = row
     return sorted(merged.values(), key=lambda row: (row["date"], row["currency"]))
+
+
+def refresh_gaitame(
+    today: date,
+    *,
+    full: bool,
+    start: date,
+) -> list[dict[str, str]]:
+    existing = load_csv(GAITAME_SWAP_PATH)
+    month_start = start if full or not existing else previous_month(today)
+    incoming: list[dict[str, str]] = []
+    current_pair_count = 0
+
+    for year, month in iter_months(month_start, today):
+        print(f"Collecting Gaitame.com {year:04d}-{month:02d}...")
+        records = collect_gaitame_month(year, month, today_jst=today)
+        pair_count = len({record.pair for record in records})
+        print(f"  {len(records)} rows / {pair_count} pairs")
+        if year == today.year and month == today.month:
+            current_pair_count = pair_count
+        incoming.extend(record.to_csv_row() for record in records)
+
+    if current_pair_count < 35:
+        raise RuntimeError(
+            "Gaitame.com current-month collector returned fewer than 35 active pairs; "
+            "refusing to publish possibly broken source data."
+        )
+
+    merged = merge_swaps(existing, incoming)
+    write_csv(GAITAME_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
 
 
 def refresh_gmo_gaika(
@@ -226,6 +259,12 @@ def main() -> int:
         help="GMO Gaika historical backfill start month (default: 2022-01).",
     )
     parser.add_argument(
+        "--gaitame-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_GAITAME_START_MONTH", "2022-01")),
+        help="Gaitame.com historical backfill start month (default: 2022-01).",
+    )
+    parser.add_argument(
         "--gmo-click-start",
         type=parse_month,
         default=parse_month(os.environ.get("TRUERATE_GMO_CLICK_START_MONTH", "2024-01")),
@@ -242,10 +281,11 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
+    gaitame_swaps = refresh_gaitame(today, full=args.full, start=args.gaitame_start)
     gaika_swaps = refresh_gmo_gaika(today, full=args.full, start=args.start)
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
-    swaps = gaika_swaps + click_swaps + triauto_swaps
+    swaps = gaitame_swaps + gaika_swaps + click_swaps + triauto_swaps
 
     confirmed_swaps = [
         row

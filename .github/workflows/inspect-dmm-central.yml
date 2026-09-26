@@ -1,4 +1,4 @@
-name: Inspect DMM and Central FX sources
+name: Inspect DMM swap source
 
 on:
   push:
@@ -17,74 +17,45 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install requests beautifulsoup4
-      - name: Inspect official pages and endpoints
+      - name: Inspect DMM calendar
         run: |
           python - <<'PY'
-          import re, requests
+          import requests,re
           from bs4 import BeautifulSoup
           from urllib.parse import urljoin
-
           h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en-US;q=0.9,en;q=0.8"}
-          pages={
-              "dmm":"https://fx.dmm.com/fx/service/swapcalendar/",
-              "central":"https://www.central-tanshifx.com/fxdirectplus/fxlive/swap/",
-          }
-
-          for name,u in pages.items():
-              print("\n====",name,u,"====")
-              r=requests.get(u,headers=h,timeout=30)
-              print("PAGE",r.status_code,r.url,len(r.text),r.headers.get("content-type"))
-              soup=BeautifulSoup(r.text,"html.parser")
-              print("TITLE",soup.title.get_text(" ",strip=True) if soup.title else "")
-              print("FORMS")
-              for form in soup.find_all("form"):
-                  print("FORM",form.get("action"),form.get("method"),form.get("id"),form.get("name"))
-                  for tag in form.find_all(["select","input","button"])[:120]:
-                      print(" ",tag.name,tag.get("name"),tag.get("value"),tag.get("type"),tag.get("id"))
-              print("SCRIPTS")
-              for sc in soup.find_all("script",src=True):
-                  su=urljoin(r.url,sc["src"])
+          u="https://fx.dmm.com/fx/service/swapcalendar/"
+          r=requests.get(u,headers=h,timeout=30)
+          r.raise_for_status()
+          r.encoding=r.apparent_encoding or r.encoding
+          soup=BeautifulSoup(r.text,"html.parser")
+          print("PAGE",r.status_code,r.url,len(r.text))
+          print("SELECTS")
+          for sel in soup.find_all("select"):
+              vals=[(o.get("value"),o.get_text(" ",strip=True),bool(o.get("selected"))) for o in sel.find_all("option")]
+              print(sel.get("id"),sel.get("name"),vals[:80])
+          print("TABLES")
+          for i,table in enumerate(soup.find_all("table")):
+              heads=[x.get_text(" ",strip=True) for x in table.find_all("th")]
+              rows=[]
+              for tr in table.find_all("tr")[:14]:
+                  cells=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
+                  if cells: rows.append(cells)
+              if rows:
+                  print("TABLE",i,"HEADS",heads[:40])
+                  for row in rows[:12]: print("ROW",row[:40])
+          print("DMM_RELEVANT_SCRIPTS")
+          for sc in soup.find_all("script",src=True):
+              su=urljoin(r.url,sc["src"])
+              if any(k in su.lower() for k in ("swap","calendar","service")):
                   print("SCRIPT",su)
-                  try:
-                      x=requests.get(su,headers=h,timeout=30)
-                      if any(k in x.text.lower() for k in ("swap","api","ajax","json","fetch","calendar")):
-                          print(" LEN",len(x.text))
-                          for pat in [
-                              r'https?://[^"\'<> ]+',
-                              r'["\']([^"\']*(?:swap|api|json|calendar)[^"\']*)["\']',
-                              r'.{0,180}(?:swap|api|ajax|json|fetch|calendar).{0,600}',
-                          ]:
-                              for m in re.finditer(pat,x.text,re.I|re.S):
-                                  z=m.group(0).replace("\n"," ")
-                                  if any(k in z.lower() for k in ("swap","api","json","fetch","calendar")):
-                                      print(" MATCH",z[:1200])
-                  except Exception as e:
-                      print(" SCRIPT_ERR",e)
-              print("TABLES")
-              for i,table in enumerate(soup.find_all("table")[:20]):
-                  rows=[]
-                  for tr in table.find_all("tr")[:12]:
-                      cells=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
-                      if cells: rows.append(cells)
-                  if rows:
-                      print("TABLE",i)
-                      for row in rows[:10]: print(" ROW",row[:40])
-              print("INLINE")
-              for m in re.finditer(r'.{0,180}(?:swap|api|ajax|json|fetch|calendar|simulat).{0,650}',r.text,re.I|re.S):
-                  z=m.group(0).replace("\n"," ")
-                  print(" ",z[:1200])
-
-          # Central likely paths / public simulator probes
-          probes=[
-              "https://www.central-tanshifx.com/fxdirectplus/fxlive/swap/",
-              "https://www.central-tanshifx.com/fxdirectplus/fxlive/swap/simulator/",
-              "https://www.central-tanshifx.com/market/swap/",
-              "https://www.central-tanshifx.com/api/swap/",
-          ]
-          for u in probes:
-              try:
-                  r=requests.get(u,headers=h,timeout=30,allow_redirects=True)
-                  print("CENTRAL_PROBE",u,r.status_code,r.url,len(r.text),r.headers.get("content-type"))
-              except Exception as e:
-                  print("CENTRAL_PROBE_ERR",u,e)
+                  x=requests.get(su,headers=h,timeout=30)
+                  print("LEN",len(x.text))
+                  for m in re.finditer(r'.{0,220}(?:swap|calendar|year|month|ajax|json|fetch).{0,700}',x.text,re.I|re.S):
+                      print("MATCH",m.group(0).replace("\n"," ")[:1400])
+          print("HTML_RELEVANT")
+          for m in re.finditer(r'.{0,220}(?:swap|calendar|year|month|select).{0,700}',r.text,re.I|re.S):
+              z=m.group(0).replace("\n"," ")
+              if any(k in z.lower() for k in ("swap","calendar","month")):
+                  print("HTML",z[:1400])
           PY

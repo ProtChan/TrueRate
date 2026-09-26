@@ -9,6 +9,10 @@ const state = {
   brokerSelectionDirty: false,
   chart: null,
   detailCharts: {},
+  detailSwapMode: "cumulative",
+  detailBuyBroker: null,
+  detailSellBroker: null,
+  detailBrokerPairKey: null,
   rankingMetric: "totalReturn",
   rankingDirection: "desc",
   arbitrageDirection: "desc",
@@ -338,6 +342,174 @@ function detailLineChartOption(series, valueLabel = "JPY") {
   };
 }
 
+function cumulativeSwapSeries(points, side) {
+  let total = 0;
+  return points.map((point, index) => {
+    if (index > 0) total += side === "long" ? point.longSwap : point.shortSwap;
+    return [point.date, total];
+  });
+}
+
+function detailBrokerSeriesData(item, side) {
+  if (state.detailSwapMode === "daily") {
+    return item.points.map((point) => [
+      point.date,
+      side === "long" ? point.longSwap : point.shortSwap,
+    ]);
+  }
+  return cumulativeSwapSeries(item.points, side);
+}
+
+function selectedBrokerPairSeries(pair = state.pair) {
+  const all = pairDailyBrokerSeries(pair);
+  const buy = all.find((item) => item.broker === state.detailBuyBroker);
+  const sell = all.find((item) => item.broker === state.detailSellBroker);
+  if (!buy || !sell || buy.broker === sell.broker) return null;
+
+  const start = [buy.points[0]?.date, sell.points[0]?.date].filter(Boolean).sort().at(-1);
+  const end = [buy.points.at(-1)?.date, sell.points.at(-1)?.date].filter(Boolean).sort()[0];
+  if (!start || !end || start > end) return null;
+
+  const buyMap = new Map(buy.points.filter((p) => p.date >= start && p.date <= end).map((p) => [p.date, p]));
+  const sellMap = new Map(sell.points.filter((p) => p.date >= start && p.date <= end).map((p) => [p.date, p]));
+  const dates = [...new Set([...buyMap.keys(), ...sellMap.keys()])].filter(
+    (date) => buyMap.has(date) && sellMap.has(date)
+  ).sort();
+  if (dates.length < 2) return null;
+
+  let buyCum = 0;
+  let sellCum = 0;
+  const buyData = [];
+  const sellData = [];
+  const netData = [];
+
+  dates.forEach((date, index) => {
+    const bp = buyMap.get(date);
+    const sp = sellMap.get(date);
+    if (index > 0) {
+      buyCum += bp.longSwap;
+      sellCum += sp.shortSwap;
+    }
+    buyData.push([date, buyCum]);
+    sellData.push([date, sellCum]);
+    netData.push([date, buyCum + sellCum]);
+  });
+
+  return {
+    start,
+    end,
+    days: Math.max(1, daysBetween(start, end)),
+    buyData,
+    sellData,
+    netData,
+    buyTotal: buyCum,
+    sellTotal: sellCum,
+    netTotal: buyCum + sellCum,
+    firstBaseJpy: buy.rawPoints.find((p) => p.date >= start)?.base_jpy ?? null,
+  };
+}
+
+function ensureDetailBrokerSelection() {
+  const pairSeries = state.data.series[state.pair] || {};
+  const brokers = Object.keys(pairSeries);
+  const pairKey = state.pair;
+
+  if (state.detailBrokerPairKey !== pairKey) {
+    state.detailBuyBroker = null;
+    state.detailSellBroker = null;
+    state.detailBrokerPairKey = pairKey;
+  }
+
+  const combinations = fixedArbitrageCombinations();
+  const best = combinations[0] || null;
+  const fallbackBuy = best?.buyBroker || brokers[0] || null;
+  const fallbackSell = best?.sellBroker || brokers.find((id) => id !== fallbackBuy) || null;
+
+  if (!brokers.includes(state.detailBuyBroker)) state.detailBuyBroker = fallbackBuy;
+  if (
+    !brokers.includes(state.detailSellBroker) ||
+    state.detailSellBroker === state.detailBuyBroker
+  ) {
+    state.detailSellBroker = fallbackSell;
+  }
+}
+
+function renderDetailBrokerSelectors() {
+  ensureDetailBrokerSelection();
+  const pairSeries = state.data.series[state.pair] || {};
+  const brokers = Object.keys(pairSeries);
+  const buySelect = $("detailBuyBrokerSelect");
+  const sellSelect = $("detailSellBrokerSelect");
+
+  const fill = (select, selected, other) => {
+    select.innerHTML = "";
+    brokers.forEach((broker) => {
+      const option = document.createElement("option");
+      option.value = broker;
+      option.textContent = brokerName(broker);
+      option.disabled = broker === other;
+      option.selected = broker === selected;
+      select.appendChild(option);
+    });
+  };
+
+  fill(buySelect, state.detailBuyBroker, state.detailSellBroker);
+  fill(sellSelect, state.detailSellBroker, state.detailBuyBroker);
+}
+
+function renderSelectedArbitrageChart() {
+  const selected = selectedBrokerPairSeries();
+  const chart = ensureDetailChart("selectedArbChart");
+  if (!selected) {
+    chart.clear();
+    $("selectedArbMeta").textContent = "Select two different brokers with overlapping history.";
+    return;
+  }
+
+  const initialNotional = Number.isFinite(selected.firstBaseJpy)
+    ? state.data.metadata.unit * selected.firstBaseJpy
+    : null;
+  const spreadPct = initialNotional > 0
+    ? (selected.netTotal / initialNotional) * 100
+    : null;
+  const annualized = Number.isFinite(spreadPct)
+    ? spreadPct * (365 / selected.days)
+    : null;
+
+  $("selectedArbMeta").innerHTML =
+    `${brokerName(state.detailBuyBroker)} BUY <strong class="${valueClass(selected.buyTotal)}">${formatJpy(selected.buyTotal)}</strong> · ` +
+    `${brokerName(state.detailSellBroker)} SELL <strong class="${valueClass(selected.sellTotal)}">${formatJpy(selected.sellTotal)}</strong> · ` +
+    `NET <strong class="${valueClass(selected.netTotal)}">${formatJpy(selected.netTotal)}</strong> · ` +
+    `Ann. <strong class="${valueClass(annualized)}">${formatPct(annualized)}</strong>`;
+
+  const series = [
+    {
+      name: `${brokerName(state.detailBuyBroker)} BUY`,
+      type: "line",
+      showSymbol: false,
+      lineStyle: { width: 1.7 },
+      color: brokerColor(state.detailBuyBroker),
+      data: selected.buyData,
+    },
+    {
+      name: `${brokerName(state.detailSellBroker)} SELL`,
+      type: "line",
+      showSymbol: false,
+      lineStyle: { width: 1.7 },
+      color: brokerColor(state.detailSellBroker),
+      data: selected.sellData,
+    },
+    {
+      name: "NET",
+      type: "line",
+      showSymbol: false,
+      lineStyle: { width: 2.6 },
+      data: selected.netData,
+    },
+  ];
+  chart.setOption(detailLineChartOption(series), true);
+}
+
 function fixedArbitrageCombinations(pair = state.pair) {
   const series = arbitragePairCandidates(pair);
   if (series.length < 2) return [];
@@ -442,7 +614,7 @@ function renderPairDetail() {
     color: brokerColor(item.broker),
     lineStyle: { width: 1.7, color: brokerColor(item.broker) },
     emphasis: { focus: "series" },
-    data: item.points.map((point) => [point.date, point.longSwap]),
+    data: detailBrokerSeriesData(item, "long"),
   }));
   const sellSeries = brokers.map((item) => ({
     name: brokerName(item.broker),
@@ -452,11 +624,25 @@ function renderPairDetail() {
     color: brokerColor(item.broker),
     lineStyle: { width: 1.7, color: brokerColor(item.broker) },
     emphasis: { focus: "series" },
-    data: item.points.map((point) => [point.date, point.shortSwap]),
+    data: detailBrokerSeriesData(item, "short"),
   }));
+
+  $("buySwapChartTitle").textContent =
+    state.detailSwapMode === "cumulative"
+      ? "Cumulative buy swap by broker"
+      : "Daily buy swap by broker";
+  $("sellSwapChartTitle").textContent =
+    state.detailSwapMode === "cumulative"
+      ? "Cumulative sell swap by broker"
+      : "Daily sell swap by broker";
+  document.querySelectorAll("#detailSwapModeButtons button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.detailSwapMode === state.detailSwapMode);
+  });
 
   ensureDetailChart("buySwapChart").setOption(detailLineChartOption(buySeries), true);
   ensureDetailChart("sellSwapChart").setOption(detailLineChartOption(sellSeries), true);
+  renderDetailBrokerSelectors();
+  renderSelectedArbitrageChart();
 
   const dispersion = dailyPairDispersion();
   const spreadSeries = [
@@ -1031,6 +1217,33 @@ function renderPairRankingColumn(side) {
 }
 
 function renderPairRanking() {
+  document.querySelectorAll("#detailSwapModeButtons button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.detailSwapMode = button.dataset.detailSwapMode;
+      if (state.view === "pairdetail") renderPairDetail();
+    });
+  });
+
+  $("detailBuyBrokerSelect").addEventListener("change", (event) => {
+    state.detailBuyBroker = event.target.value;
+    if (state.detailBuyBroker === state.detailSellBroker) {
+      const candidates = Object.keys(state.data.series[state.pair] || {});
+      state.detailSellBroker = candidates.find((id) => id !== state.detailBuyBroker) || null;
+    }
+    renderDetailBrokerSelectors();
+    renderSelectedArbitrageChart();
+  });
+
+  $("detailSellBrokerSelect").addEventListener("change", (event) => {
+    state.detailSellBroker = event.target.value;
+    if (state.detailSellBroker === state.detailBuyBroker) {
+      const candidates = Object.keys(state.data.series[state.pair] || {});
+      state.detailBuyBroker = candidates.find((id) => id !== state.detailSellBroker) || null;
+    }
+    renderDetailBrokerSelectors();
+    renderSelectedArbitrageChart();
+  });
+
   document.querySelectorAll("#rankingTabs button").forEach((button) => {
     button.classList.toggle("active", button.dataset.rankingMetric === state.rankingMetric);
   });

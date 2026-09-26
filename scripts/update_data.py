@@ -14,6 +14,7 @@ SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
 from truerate.brokers.ainet_fx import collect_recent_products as collect_ainet_products
+from truerate.brokers.oanda_ny import collect_month as collect_oanda_ny_month
 from truerate.brokers.oanda_tokyo import collect_history as collect_oanda_tokyo_history
 from truerate.brokers.dmm_fx import collect_recent_products as collect_dmm_products
 from truerate.brokers.rakuten_fx import collect_recent as collect_rakuten_recent
@@ -42,6 +43,7 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
+OANDA_NY_SWAP_PATH = ROOT / "data" / "swaps" / "oanda_ny.csv"
 OANDA_TOKYO_SWAP_PATH = ROOT / "data" / "swaps" / "oanda_tokyo.csv"
 GAITAME_ONLINE_SWAP_PATH = ROOT / "data" / "swaps" / "gaitame_online.csv"
 AINET_SWAP_PATH = ROOT / "data" / "swaps" / "ainet_fx.csv"
@@ -271,6 +273,37 @@ def refresh_sbi(
 
     merged = merge_swaps(existing, incoming)
     write_csv(SBI_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
+
+
+def refresh_oanda_ny(
+    today: date,
+    *,
+    full: bool,
+    start: date,
+) -> list[dict[str, str]]:
+    existing = load_csv(OANDA_NY_SWAP_PATH)
+    month_start = start if full or not existing else previous_month(today)
+    incoming: list[dict[str, str]] = []
+    current_pair_count = 0
+
+    for year, month in iter_months(month_start, today):
+        print(f"Collecting OANDA NY {year:04d}-{month:02d}...")
+        records = collect_oanda_ny_month(year, month, today_jst=today)
+        pair_count = len({record.pair for record in records})
+        print(f"  {len(records)} rows / {pair_count} pairs")
+        if year == today.year and month == today.month:
+            current_pair_count = pair_count
+        incoming.extend(record.to_csv_row() for record in records)
+
+    if current_pair_count < 60:
+        raise RuntimeError(
+            "OANDA NY current-month collector returned fewer than 60 pairs; "
+            "refusing to publish possibly broken source data."
+        )
+
+    merged = merge_swaps(existing, incoming)
+    write_csv(OANDA_NY_SWAP_PATH, merged, SWAP_FIELDS)
     return merged
 
 
@@ -649,6 +682,12 @@ def main() -> int:
         help="FX Broadnet historical PDF backfill start month (default: 2023-10).",
     )
     parser.add_argument(
+        "--oanda-ny-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_OANDA_NY_START_MONTH", "2019-04")),
+        help="OANDA NY historical backfill start month (default: 2019-04).",
+    )
+    parser.add_argument(
         "--gaitame-online-start",
         type=parse_month,
         default=parse_month(os.environ.get("TRUERATE_GAITAME_ONLINE_START_MONTH", "2024-01")),
@@ -695,6 +734,11 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
+    oanda_ny_swaps = refresh_oanda_ny(
+        today,
+        full=args.full,
+        start=args.oanda_ny_start,
+    )
     oanda_tokyo_swaps = refresh_oanda_tokyo(today)
     gaitame_online_swaps = refresh_gaitame_online(
         today,
@@ -717,7 +761,8 @@ def main() -> int:
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
     swaps = (
-        oanda_tokyo_swaps
+        oanda_ny_swaps
+        + oanda_tokyo_swaps
         + gaitame_online_swaps
         + ainet_swaps
         + ainet_loop_swaps

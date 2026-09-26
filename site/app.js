@@ -21,6 +21,7 @@ const state = {
 };
 
 const BROKER_COLORS = {
+  oanda_ny: "#a78bfa",
   rakuten_fx: "#e11d48",
   dmm_fx: "#8b5cf6",
   dmm_fx_mini: "#a78bfa",

@@ -4,6 +4,7 @@ TrueRate is a static FX total-return dashboard that separates common market move
 
 Supported brokers/products:
 
+- **OANDA Japan NYサーバー**
 - **OANDA Japan 東京サーバー**
 - **外為オンライン**
 - **アイネットFX**
@@ -60,6 +61,7 @@ The browser rebases broker-to-broker comparisons to a shared visible start date.
 
 ## Data sources
 
+- OANDA Japan NY: official monthly NY4 swap-history JSON (2019-04 onward)
 - OANDA Japan 東京サーバー: official full-history swap CSV (quote-currency cashflow, 10,000 base units)
 - 外為オンライン: official monthly swap-point PDFs
 - アイネットFX / ループイフダン: official current/previous-month swap-calendar PDFs
@@ -94,6 +96,7 @@ scripts/
   update_data.py         incremental collection/build pipeline
 
 src/truerate/
+  brokers/oanda_ny.py     OANDA Japan NY monthly-history collector
   brokers/oanda_tokyo.py    OANDA Japan Tokyo full-history CSV collector
   brokers/gaitame_online.py 外為オンライン monthly PDF collector
   brokers/ainet_fx.py    アイネットFX + ループイフダン PDF collector
@@ -132,6 +135,7 @@ The data workflow runs every day at **09:15 JST**.
 
 On a new data set:
 
+- OANDA Japan NY backfills from `2019-04`
 - OANDA Japan 東京サーバー imports the official full-history CSV (available back to 2019 in the current file)
 - 外為オンライン backfills from `2024-01`
 - アイネットFX / ループイフダン import official current and previous month PDFs and then accumulate history daily in TrueRate
@@ -154,6 +158,7 @@ After the initial backfill, monthly-history brokers refresh their recent months.
 Historical starts can be changed with:
 
 ~~~text
+TRUERATE_OANDA_NY_START_MONTH=YYYY-MM
 TRUERATE_CLICK365_START_MONTH=YYYY-MM
 TRUERATE_MATSUI_START_MONTH=YYYY-MM
 TRUERATE_FXBROADNET_START_MONTH=YYYY-MM

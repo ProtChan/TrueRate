@@ -14,6 +14,7 @@ SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
 from truerate.brokers.ainet_fx import collect_recent_products as collect_ainet_products
+from truerate.brokers.oanda_tokyo import collect_history as collect_oanda_tokyo_history
 from truerate.brokers.dmm_fx import collect_recent_products as collect_dmm_products
 from truerate.brokers.rakuten_fx import collect_recent as collect_rakuten_recent
 from truerate.brokers.click365 import collect_period as collect_click365_period
@@ -41,6 +42,7 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
+OANDA_TOKYO_SWAP_PATH = ROOT / "data" / "swaps" / "oanda_tokyo.csv"
 GAITAME_ONLINE_SWAP_PATH = ROOT / "data" / "swaps" / "gaitame_online.csv"
 AINET_SWAP_PATH = ROOT / "data" / "swaps" / "ainet_fx.csv"
 AINET_LOOP_SWAP_PATH = ROOT / "data" / "swaps" / "ainet_loop.csv"
@@ -269,6 +271,23 @@ def refresh_sbi(
 
     merged = merge_swaps(existing, incoming)
     write_csv(SBI_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
+
+
+def refresh_oanda_tokyo(today: date) -> list[dict[str, str]]:
+    existing = load_csv(OANDA_TOKYO_SWAP_PATH)
+    print("Collecting OANDA Japan Tokyo server full swap CSV...")
+    records = collect_oanda_tokyo_history(today_jst=today)
+    pair_count = len({record.pair for record in records})
+    print(f"  {len(records)} rows / {pair_count} pairs")
+    if pair_count < 25:
+        raise RuntimeError(
+            "OANDA Tokyo collector returned fewer than 25 pairs; "
+            "refusing to publish possibly broken official CSV data."
+        )
+
+    merged = merge_swaps(existing, [record.to_csv_row() for record in records])
+    write_csv(OANDA_TOKYO_SWAP_PATH, merged, SWAP_FIELDS)
     return merged
 
 
@@ -676,6 +695,7 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
+    oanda_tokyo_swaps = refresh_oanda_tokyo(today)
     gaitame_online_swaps = refresh_gaitame_online(
         today,
         full=args.full,
@@ -697,7 +717,8 @@ def main() -> int:
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
     swaps = (
-        gaitame_online_swaps
+        oanda_tokyo_swaps
+        + gaitame_online_swaps
         + ainet_swaps
         + ainet_loop_swaps
         + rakuten_swaps

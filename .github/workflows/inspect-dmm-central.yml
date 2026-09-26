@@ -17,7 +17,7 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install requests beautifulsoup4
-      - name: Inspect DMM calendar
+      - name: Inspect DMM scripts and inline code
         run: |
           python - <<'PY'
           import requests,re
@@ -30,32 +30,36 @@ jobs:
           r.encoding=r.apparent_encoding or r.encoding
           soup=BeautifulSoup(r.text,"html.parser")
           print("PAGE",r.status_code,r.url,len(r.text))
-          print("SELECTS")
-          for sel in soup.find_all("select"):
-              vals=[(o.get("value"),o.get_text(" ",strip=True),bool(o.get("selected"))) for o in sel.find_all("option")]
-              print(sel.get("id"),sel.get("name"),vals[:80])
-          print("TABLES")
-          for i,table in enumerate(soup.find_all("table")):
-              heads=[x.get_text(" ",strip=True) for x in table.find_all("th")]
-              rows=[]
-              for tr in table.find_all("tr")[:14]:
-                  cells=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
-                  if cells: rows.append(cells)
-              if rows:
-                  print("TABLE",i,"HEADS",heads[:40])
-                  for row in rows[:12]: print("ROW",row[:40])
-          print("DMM_RELEVANT_SCRIPTS")
-          for sc in soup.find_all("script",src=True):
-              su=urljoin(r.url,sc["src"])
-              if any(k in su.lower() for k in ("swap","calendar","service")):
+
+          print("ALL_SCRIPTS")
+          for sc in soup.find_all("script"):
+              src=sc.get("src")
+              if src:
+                  su=urljoin(r.url,src)
                   print("SCRIPT",su)
-                  x=requests.get(su,headers=h,timeout=30)
-                  print("LEN",len(x.text))
-                  for m in re.finditer(r'.{0,220}(?:swap|calendar|year|month|ajax|json|fetch).{0,700}',x.text,re.I|re.S):
-                      print("MATCH",m.group(0).replace("\n"," ")[:1400])
-          print("HTML_RELEVANT")
-          for m in re.finditer(r'.{0,220}(?:swap|calendar|year|month|select).{0,700}',r.text,re.I|re.S):
-              z=m.group(0).replace("\n"," ")
-              if any(k in z.lower() for k in ("swap","calendar","month")):
-                  print("HTML",z[:1400])
+                  try:
+                      x=requests.get(su,headers=h,timeout=30)
+                      txt=x.text
+                      if any(k in txt.lower() for k in ("swap","calendar")):
+                          print("RELEVANT_SCRIPT",su,len(txt))
+                          for line in txt.splitlines():
+                              if any(k in line.lower() for k in ("swap","calendar","ajax","json","fetch")):
+                                  print("JSLINE",line[:2200])
+                  except Exception as e:
+                      print("ERR",e)
+              else:
+                  txt=sc.get_text("\n")
+                  if any(k in txt.lower() for k in ("swap","calendar","ajax","json","fetch")):
+                      print("INLINE_SCRIPT",txt[:12000].replace("\n"," | "))
+
+          print("LINKS")
+          for tag in soup.find_all(["link","a"],href=True):
+              href=urljoin(r.url,tag["href"])
+              txt=tag.get_text(" ",strip=True)
+              if any(k in (href+" "+txt).lower() for k in ("swap","calendar","json","csv")):
+                  print("LINK",txt[:100],href)
+
+          print("URL_LIKE")
+          for m in re.finditer(r'[^"\'\s<>]{0,120}(?:swap|calendar)[^"\'\s<>]{0,180}',r.text,re.I):
+              print("URLLIKE",m.group(0)[:500])
           PY

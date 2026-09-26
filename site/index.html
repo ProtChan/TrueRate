@@ -345,7 +345,7 @@
         <div class="methodology-grid">
           <div>
             <strong>Swap timing</strong>
-            <p>各業者のカレンダー表示日ではなく、その翌日のTrueRate指数へ反映します。日本時間のNYクローズ後に残高へ反映されるタイミングを日次系列へ合わせています。</p>
+            <p>原則は各業者のカレンダー表示日の翌日にTrueRateへ反映します。SBI FXトレードのみ表示日当日として扱い、土日表示は翌月曜へ繰り越します。</p>
           </div>
           <div>
             <strong>Spot reference</strong>
@@ -357,7 +357,7 @@
           </div>
           <div>
             <strong>Swap arbitrage</strong>
-            <p>同一通貨ペアを同量Long/Shortし、異なる業者間で期間中の受取スワップ合計が最大になる組み合わせを表示します。売買スプレッド、約定差、証拠金、将来のスワップ変更は含みません。</p>
+            <p>同一通貨ペアを同量Long/Shortし、異なる業者間の組み合わせを比較します。Notional yieldは想定元本基準、Margin yieldは現在のBUY側＋SELL側必要証拠金合計を分母にします。売買スプレッド、約定差、将来のスワップ変更は含みません。</p>
           </div>
           <div>
             <strong>Pair detail</strong>

@@ -1,7 +1,7 @@
 from datetime import date
 import unittest
 
-from truerate.margins import parse_click365_margin_csv
+from truerate.margins import OTC_PAIR_MARGIN_RATES, parse_click365_margin_csv
 
 
 CSV_TEXT = """20260928,20261002
@@ -26,6 +26,12 @@ class MarginParserTest(unittest.TestCase):
         self.assertEqual(data["per_pair_jpy"]["ZAR/JPY"], 3826.0)
         self.assertEqual(data["per_pair_jpy"]["HUF/JPY"], 1970.0)
         self.assertNotIn("USL/JPY", data["per_pair_jpy"])
+
+    def test_current_otc_pair_margin_exceptions(self):
+        self.assertEqual(OTC_PAIR_MARGIN_RATES["sbi_fx"]["BRL/JPY"], 0.10)
+        self.assertEqual(OTC_PAIR_MARGIN_RATES["sbi_fx"]["RUB/JPY"], 0.33)
+        self.assertEqual(OTC_PAIR_MARGIN_RATES["minfx"]["RUB/JPY"], 0.10)
+        self.assertEqual(OTC_PAIR_MARGIN_RATES["lightfx"]["RUB/JPY"], 0.10)
 
 
 if __name__ == "__main__":

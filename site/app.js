@@ -1280,19 +1280,21 @@ function arbitragePairCandidates(pair) {
     .filter((item) => item.points.length >= 2);
 }
 
-function requiredMarginForLeg(broker, pair, startPoint) {
+function requiredMarginForLeg(broker, pair, marginPoint) {
   const requirements = state.data.metadata.margin_requirements || {};
-  const initialNotionalJpy = state.data.metadata.unit * startPoint.base_jpy;
+  const currentNotionalJpy = state.data.metadata.unit * marginPoint.base_jpy;
 
   if (broker === "click365") {
     const exact = requirements.click365?.per_pair_jpy?.[pair];
     if (Number.isFinite(exact)) return exact;
   }
 
-  const rate = requirements.margin_rate_by_broker?.[broker]
+  const pairRate = requirements.margin_rate_by_broker_pair?.[broker]?.[pair];
+  const rate = pairRate
+    ?? requirements.margin_rate_by_broker?.[broker]
     ?? requirements.default_otc_margin_rate
     ?? 0.04;
-  return initialNotionalJpy * rate;
+  return currentNotionalJpy * rate;
 }
 
 function arbitrageYieldValue(candidate) {
@@ -1325,6 +1327,7 @@ function arbitrageForPair(pair) {
       const startPoint = buy.points[0];
       const sellStartPoint = sell.points[0];
       const endPoint = buy.points.at(-1);
+      const sellEndPoint = sell.points.at(-1);
       const holdingDays = Math.max(1, daysBetween(startPoint.date, endPoint.date));
 
       const initialNotionalJpy = state.data.metadata.unit * startPoint.base_jpy;
@@ -1338,12 +1341,12 @@ function arbitrageForPair(pair) {
       const buyRequiredMargin = requiredMarginForLeg(
         buy.broker,
         pair,
-        startPoint
+        endPoint
       );
       const sellRequiredMargin = requiredMarginForLeg(
         sell.broker,
         pair,
-        sellStartPoint
+        sellEndPoint
       );
       const totalRequiredMargin = buyRequiredMargin + sellRequiredMargin;
       const marginPct = totalRequiredMargin > 0

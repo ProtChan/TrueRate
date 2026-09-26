@@ -138,7 +138,7 @@ def build_site_payload(
                 "generated_at": generated_at,
                 "unit": unit,
                 "rate_provider": "Frankfurter blended official-source reference rates",
-                "swap_effective_rule": "broker calendar display date + 1 calendar day (JST)",
+                "swap_effective_rule": "default: broker calendar display date + 1 calendar day (JST); SBI FX Trade: display date itself, weekend display rolled to next Monday",
                 "margin_requirements": margin_requirements or {},
             },
             "brokers": list(BROKERS.values()),
@@ -237,7 +237,7 @@ def build_site_payload(
             "generated_at": generated_at,
             "unit": unit,
             "rate_provider": "Frankfurter blended official-source reference rates",
-            "swap_effective_rule": "broker calendar display date + 1 calendar day (JST)",
+            "swap_effective_rule": "default: broker calendar display date + 1 calendar day (JST); SBI FX Trade: display date itself, weekend display rolled to next Monday",
             "calculation": (
                 "FX PnL is fixed base-unit PnL converted from quote currency to JPY "
                 "at each day's reference rate; broker swap cashflow is added separately."

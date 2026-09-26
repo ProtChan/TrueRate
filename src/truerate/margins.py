@@ -19,6 +19,20 @@ OTC_MARGIN_RATES = {
     if broker_id != "click365"
 }
 
+# Current individual-account exceptions published by the brokers.
+OTC_PAIR_MARGIN_RATES = {
+    "sbi_fx": {
+        "BRL/JPY": 0.10,
+        "RUB/JPY": 0.33,
+    },
+    "minfx": {
+        "RUB/JPY": 0.10,
+    },
+    "lightfx": {
+        "RUB/JPY": 0.10,
+    },
+}
+
 
 def _candidate_publication_mondays(today: date) -> list[date]:
     # TFX publishes the amount for the following applicable week.
@@ -110,5 +124,6 @@ def build_margin_requirements(today: date) -> dict:
         ),
         "default_otc_margin_rate": 0.04,
         "margin_rate_by_broker": OTC_MARGIN_RATES,
+        "margin_rate_by_broker_pair": OTC_PAIR_MARGIN_RATES,
         "click365": fetch_click365_margin_schedule(today),
     }

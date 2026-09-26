@@ -1,7 +1,7 @@
 from datetime import date
 import unittest
 
-from truerate.brokers.gmo_click import parse_calendar_html
+from truerate.brokers.gmo_click import PAIR_START_DATES, parse_calendar_html
 
 
 HTML = """
@@ -52,6 +52,12 @@ class GmoClickParserTest(unittest.TestCase):
         self.assertEqual(blank.status, "scheduled")
         self.assertIsNone(blank.long_swap_jpy)
         self.assertIsNone(blank.short_swap_jpy)
+
+    def test_2025_added_pairs_have_explicit_start_date(self):
+        self.assertEqual(PAIR_START_DATES["CZK/JPY"], date(2025, 3, 17))
+        self.assertEqual(PAIR_START_DATES["PLN/JPY"], date(2025, 3, 17))
+        self.assertEqual(PAIR_START_DATES["HUF/JPY"], date(2025, 3, 17))
+        self.assertEqual(PAIR_START_DATES["AUD/NZD"], date(2025, 3, 17))
 
     def test_high_notional_pairs_keep_broker_publication_unit(self):
         records = parse_calendar_html(

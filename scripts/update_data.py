@@ -13,7 +13,10 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
-from truerate.brokers.gmo_click import collect_month as collect_gmo_click_month
+from truerate.brokers.gmo_click import (
+    PAIR_START_DATES as GMO_CLICK_PAIR_START_DATES,
+    collect_month as collect_gmo_click_month,
+)
 from truerate.brokers.gmo_gaika import collect_month as collect_gmo_gaika_month, iter_months
 from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
@@ -163,8 +166,17 @@ def refresh_gmo_click(
         )
 
     merged = merge_swaps(existing, incoming)
-    write_csv(GMO_CLICK_SWAP_PATH, merged, SWAP_FIELDS)
-    return merged
+
+    # Guard against stale/incorrect rows from dates before a pair existed.
+    cleaned: list[dict[str, str]] = []
+    for row in merged:
+        pair_start = GMO_CLICK_PAIR_START_DATES.get(row["pair"])
+        if pair_start is not None and date.fromisoformat(row["trade_date"]) < pair_start:
+            continue
+        cleaned.append(row)
+
+    write_csv(GMO_CLICK_SWAP_PATH, cleaned, SWAP_FIELDS)
+    return cleaned
 
 
 def main() -> int:

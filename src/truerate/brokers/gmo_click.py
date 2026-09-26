@@ -47,6 +47,15 @@ PAIR_UNITS = {
     for pair in STANDARD_PAIRS
 }
 
+# Four standard pairs were added to FXneo on 2025-03-17. Do not request or
+# preserve data before the product actually existed.
+PAIR_START_DATES = {
+    "CZK/JPY": date(2025, 3, 17),
+    "PLN/JPY": date(2025, 3, 17),
+    "HUF/JPY": date(2025, 3, 17),
+    "AUD/NZD": date(2025, 3, 17),
+}
+
 DATE_RE = re.compile(r"(\d{1,2})月(\d{1,2})日")
 
 
@@ -208,14 +217,21 @@ def collect_month(
     client = session or requests.Session()
     records: list[SwapRecord] = []
     for pair in pairs:
-        records.extend(
-            collect_pair_month(
-                year,
-                month,
-                pair,
-                session=client,
-                timeout=timeout,
-                today_jst=today_jst,
-            )
+        start_date = PAIR_START_DATES.get(pair)
+        month_end = date(year, month, 28) + timedelta(days=4)
+        month_end = month_end - timedelta(days=month_end.day)
+        if start_date is not None and month_end < start_date:
+            continue
+
+        pair_records = collect_pair_month(
+            year,
+            month,
+            pair,
+            session=client,
+            timeout=timeout,
+            today_jst=today_jst,
         )
+        if start_date is not None:
+            pair_records = [record for record in pair_records if record.trade_date >= start_date]
+        records.extend(pair_records)
     return sorted(records, key=lambda item: (item.pair, item.trade_date))

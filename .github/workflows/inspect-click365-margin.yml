@@ -1,0 +1,45 @@
+name: Inspect Click365 margin CSV
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-click365-margin.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - name: Inspect latest personal 25x margin file
+        run: |
+          python - <<'PY'
+          import requests
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+          h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en;q=0.8"}
+          u="https://www.tfx.co.jp/historical/fx/margin.html"
+          r=requests.get(u,headers=h,timeout=30)
+          r.raise_for_status()
+          soup=BeautifulSoup(r.text,"html.parser")
+          h3=next(x for x in soup.find_all(["h2","h3"]) if "個人用為替証拠金基準額（レバレッジ25倍方式）" in x.get_text(" ",strip=True))
+          link=h3.find_next("a",href=True)
+          csv_url=urljoin(r.url,link["href"])
+          print("URL",csv_url)
+          c=requests.get(csv_url,headers=h,timeout=30)
+          print("STATUS",c.status_code,c.headers.get("content-type"),len(c.content))
+          for enc in ("cp932","utf-8-sig","shift_jis"):
+              try:
+                  t=c.content.decode(enc)
+                  print("ENC",enc)
+                  print(t)
+                  break
+              except Exception:
+                  pass
+          PY

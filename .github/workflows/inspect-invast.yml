@@ -16,6 +16,9 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
+      - name: Install requests
+        run: pip install requests
+
       - name: Inspect page source and JS assets
         run: |
           python - <<'PY'

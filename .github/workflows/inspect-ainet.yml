@@ -16,42 +16,30 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - run: pip install requests pypdf
-      - name: Inspect official Ainet JSON and PDFs
+      - run: pip install requests
+      - name: Compare regular and Loop-if-done JSON
         run: |
           python - <<'PY'
-          import io, json, requests
-          from pypdf import PdfReader
+          import requests
           h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en-US;q=0.9,en;q=0.8"}
-          base="https://inet-sec.co.jp"
-          for path in (
-              "/study/fx-guide/js/pubSwapList.json",
-              "/study/fx-guide/js/pubSwapList_sys.json",
-          ):
-              r=requests.get(base+path,headers=h,timeout=30)
-              print("JSON",path,r.status_code,len(r.content),r.headers.get("content-type"))
+          base="https://inet-sec.co.jp/study/fx-guide/js/"
+          def fetch(name):
+              r=requests.get(base+name,headers=h,timeout=30)
               r.raise_for_status()
-              for enc in ("utf-8-sig","cp932","shift_jis"):
-                  try:
-                      txt=r.content.decode(enc)
-                      data=json.loads(txt)
-                      print("ENC",enc,"TYPE",type(data).__name__,"COUNT",len(data))
-                      print("FIRST",data[:3] if isinstance(data,list) else list(data.items())[:3])
-                      print("LAST",data[-3:] if isinstance(data,list) else "")
-                      break
-                  except Exception:
-                      pass
-
-          for name,path in (
-              ("prev","/study/fx-guide/swap-point/swap_zengetu.pdf"),
-              ("curr","/study/fx-guide/swap-point/swap_tougetu.pdf"),
-          ):
-              r=requests.get(base+path,headers=h,timeout=30)
-              print("PDF",name,r.status_code,len(r.content),r.headers.get("content-type"))
-              r.raise_for_status()
-              reader=PdfReader(io.BytesIO(r.content))
-              print("PAGES",len(reader.pages))
-              for i,page in enumerate(reader.pages[:8]):
-                  txt=page.extract_text() or ""
-                  print("PDFPAGE",name,i,txt[:5000].replace("\n"," | "))
+              return {x["TSUUKA"]:x for x in r.json()["query"]}
+          a=fetch("pubSwapList.json")
+          b=fetch("pubSwapList_sys.json")
+          print("REGULAR_COUNT",len(a),sorted(a))
+          print("LOOP_COUNT",len(b),sorted(b))
+          common=sorted(set(a)&set(b))
+          diffs=[]
+          for pair in common:
+              aa=a[pair]; bb=b[pair]
+              fields=("URI","KAI","SWAP_NISSUU","TEKIYOU_KAISHIBI","EIGYOUBI")
+              if any(aa.get(k)!=bb.get(k) for k in fields):
+                  diffs.append((pair,{k:aa.get(k) for k in fields},{k:bb.get(k) for k in fields}))
+          print("DIFF_COUNT",len(diffs))
+          print("DIFFS",diffs)
+          print("REG_ONLY",sorted(set(a)-set(b)))
+          print("LOOP_ONLY",sorted(set(b)-set(a)))
           PY

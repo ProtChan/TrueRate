@@ -20,6 +20,7 @@ from truerate.brokers.click365 import collect_period as collect_click365_period
 from truerate.brokers.fxbroadnet import collect_month as collect_fxbroadnet_month
 from truerate.brokers.matsui_fx import collect_year as collect_matsui_year
 from truerate.brokers.gaitame_com import collect_month as collect_gaitame_month
+from truerate.brokers.gaitame_online import collect_month as collect_gaitame_online_month
 from truerate.brokers.hirose import collect_history as collect_hirose_history
 from truerate.brokers.jfx import collect_history as collect_jfx_history
 from truerate.brokers.lightfx import collect_recent_products as collect_lightfx_products
@@ -40,6 +41,7 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
+GAITAME_ONLINE_SWAP_PATH = ROOT / "data" / "swaps" / "gaitame_online.csv"
 AINET_SWAP_PATH = ROOT / "data" / "swaps" / "ainet_fx.csv"
 AINET_LOOP_SWAP_PATH = ROOT / "data" / "swaps" / "ainet_loop.csv"
 RAKUTEN_SWAP_PATH = ROOT / "data" / "swaps" / "rakuten_fx.csv"
@@ -267,6 +269,37 @@ def refresh_sbi(
 
     merged = merge_swaps(existing, incoming)
     write_csv(SBI_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
+
+
+def refresh_gaitame_online(
+    today: date,
+    *,
+    full: bool,
+    start: date,
+) -> list[dict[str, str]]:
+    existing = load_csv(GAITAME_ONLINE_SWAP_PATH)
+    month_start = start if full or not existing else previous_month(today)
+    incoming: list[dict[str, str]] = []
+    current_pair_count = 0
+
+    for year, month in iter_months(month_start, today):
+        print(f"Collecting Gaitame Online {year:04d}-{month:02d}...")
+        records = collect_gaitame_online_month(year, month, today_jst=today)
+        pair_count = len({record.pair for record in records})
+        print(f"  {len(records)} rows / {pair_count} pairs")
+        if year == today.year and month == today.month:
+            current_pair_count = pair_count
+        incoming.extend(record.to_csv_row() for record in records)
+
+    if current_pair_count < 24:
+        raise RuntimeError(
+            "Gaitame Online current-month collector returned fewer than 24 pairs; "
+            "refusing to publish possibly broken PDF data."
+        )
+
+    merged = merge_swaps(existing, incoming)
+    write_csv(GAITAME_ONLINE_SWAP_PATH, merged, SWAP_FIELDS)
     return merged
 
 
@@ -597,6 +630,12 @@ def main() -> int:
         help="FX Broadnet historical PDF backfill start month (default: 2023-10).",
     )
     parser.add_argument(
+        "--gaitame-online-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_GAITAME_ONLINE_START_MONTH", "2024-01")),
+        help="Gaitame Online historical PDF start month (default: 2024-01).",
+    )
+    parser.add_argument(
         "--gaitame-start",
         type=parse_month,
         default=parse_month(os.environ.get("TRUERATE_GAITAME_START_MONTH", "2022-01")),
@@ -637,6 +676,11 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
+    gaitame_online_swaps = refresh_gaitame_online(
+        today,
+        full=args.full,
+        start=args.gaitame_online_start,
+    )
     ainet_swaps, ainet_loop_swaps = refresh_ainet(today)
     rakuten_swaps = refresh_rakuten(today)
     dmm_swaps, dmm_mini_swaps, dmm_large_swaps = refresh_dmm(today)
@@ -653,7 +697,8 @@ def main() -> int:
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
     swaps = (
-        ainet_swaps
+        gaitame_online_swaps
+        + ainet_swaps
         + ainet_loop_swaps
         + rakuten_swaps
         + dmm_swaps

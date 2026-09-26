@@ -4,6 +4,7 @@ TrueRate is a static FX total-return dashboard that separates common market move
 
 Supported brokers/products:
 
+- **外為オンライン**
 - **アイネットFX**
 - **アイネットFX ループイフダン**
 - **楽天FX**
@@ -58,6 +59,7 @@ The browser rebases broker-to-broker comparisons to a shared visible start date.
 
 ## Data sources
 
+- 外為オンライン: official monthly swap-point PDFs
 - アイネットFX / ループイフダン: official current/previous-month swap-calendar PDFs
 - 楽天FX: official public latest swap feed; TrueRate accumulates the daily published values
 - DMM FX / Mini / Large: official public swap-calendar JSON API
@@ -90,6 +92,7 @@ scripts/
   update_data.py         incremental collection/build pipeline
 
 src/truerate/
+  brokers/gaitame_online.py 外為オンライン monthly PDF collector
   brokers/ainet_fx.py    アイネットFX + ループイフダン PDF collector
   brokers/rakuten_fx.py  楽天FX public latest-swap collector
   brokers/dmm_fx.py      DMM FX / Mini / Large rolling API collector
@@ -126,6 +129,7 @@ The data workflow runs every day at **09:15 JST**.
 
 On a new data set:
 
+- 外為オンライン backfills from `2024-01`
 - アイネットFX / ループイフダン import official current and previous month PDFs and then accumulate history daily in TrueRate
 - 楽天FX imports the official latest-value feed and accumulates history daily in TrueRate
 - DMM FX / Mini / Large import the public rolling API (roughly the latest two months) and then accumulate history daily in TrueRate
@@ -149,6 +153,7 @@ Historical starts can be changed with:
 TRUERATE_CLICK365_START_MONTH=YYYY-MM
 TRUERATE_MATSUI_START_MONTH=YYYY-MM
 TRUERATE_FXBROADNET_START_MONTH=YYYY-MM
+TRUERATE_GAITAME_ONLINE_START_MONTH=YYYY-MM
 TRUERATE_GAITAME_START_MONTH=YYYY-MM
 TRUERATE_START_MONTH=YYYY-MM
 TRUERATE_GMO_CLICK_START_MONTH=YYYY-MM

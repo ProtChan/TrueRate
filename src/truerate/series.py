@@ -5,6 +5,10 @@ from datetime import date, timedelta
 from typing import Iterable
 
 BROKERS = {
+    "gaitame_online": {
+        "id": "gaitame_online",
+        "name": "外為オンライン",
+    },
     "ainet_fx": {
         "id": "ainet_fx",
         "name": "アイネットFX",

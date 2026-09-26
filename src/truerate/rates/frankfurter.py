@@ -39,17 +39,27 @@ def fetch_usd_cross(
         time.sleep(0.5)
 
     response = None
+    last_error: requests.RequestException | None = None
     for attempt in range(6):
-        response = client.get(
-            API_URL,
-            params={
-                "base": "USD",
-                "quotes": currency,
-                "from": start.isoformat(),
-                "to": end.isoformat(),
-            },
-            timeout=timeout,
-        )
+        try:
+            response = client.get(
+                API_URL,
+                params={
+                    "base": "USD",
+                    "quotes": currency,
+                    "from": start.isoformat(),
+                    "to": end.isoformat(),
+                },
+                timeout=timeout,
+            )
+            last_error = None
+        except requests.RequestException as exc:
+            last_error = exc
+            if attempt == 5:
+                raise
+            time.sleep(min(2 ** attempt, 16))
+            continue
+
         if response.status_code != 429:
             break
 
@@ -62,7 +72,10 @@ def fetch_usd_cross(
             wait_seconds = min(2 ** attempt, 16)
         time.sleep(wait_seconds)
 
-    assert response is not None
+    if response is None:
+        if last_error is not None:
+            raise last_error
+        raise RuntimeError("Frankfurter request produced no response")
 
     # Some broker currencies may not exist in the public reference-rate
     # provider. A missing reference rate should not break swap collection.

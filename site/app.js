@@ -1206,7 +1206,7 @@ function renderPairRankingColumn(side) {
       <td class="${valueClass(metric.maxDrawdown)}">${formatPct(metric.maxDrawdown)}</td>
       <td>${formatPct(metric.volatility)}</td>
       <td class="coverage-note">${formatDate(metric.startDate)}</td>`;
-    row.addEventListener("click", () => openPairDetail(metric.pair));
+    row.addEventListener("click", () => openPairInDashboard(metric.pair));
     body.appendChild(row);
   });
 
@@ -1355,7 +1355,7 @@ function renderArbitrage() {
 
   rows.forEach((item, index) => {
     const row = document.createElement("tr");
-    row.title = `Open ${item.pair} in Dashboard`;
+    row.title = `Open ${item.pair} in Pair Detail`;
     row.innerHTML = `
       <td class="pair-rank">#${index + 1}</td>
       <td class="pair-name">${item.pair}</td>

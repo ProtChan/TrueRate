@@ -1,0 +1,91 @@
+name: Inspect next broker sources
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-next-brokers.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - name: Inspect official sources
+        run: |
+          python - <<'PY'
+          import re, requests
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+
+          H={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en;q=0.8"}
+          urls={
+            "lightfx":"https://lightfx.jp/market/swap/",
+            "sbi":"https://www.sbifxt.co.jp/market/swap_calendar.html",
+            "hirose":"https://hirose-fx.co.jp/contents/news/Swap",
+            "jfx":"https://www.jfx.co.jp/trading_rule/swap/",
+          }
+
+          for name,u in urls.items():
+              print("\n\n###",name,u)
+              r=requests.get(u,headers=H,timeout=30)
+              print("PAGE",r.status_code,r.url,len(r.text),r.headers.get("content-type"))
+              s=BeautifulSoup(r.text,"html.parser")
+
+              print("LINKS")
+              for a in s.find_all("a",href=True):
+                  href=urljoin(r.url,a["href"])
+                  text=a.get_text(" ",strip=True)
+                  if any(k in (href+" "+text).lower() for k in ("csv","swap","download","history","calendar")):
+                      print("A",text[:100],href)
+
+              print("SELECTS")
+              for sel in s.find_all("select"):
+                  opts=[(o.get("value"),o.get_text(" ",strip=True),bool(o.get("selected"))) for o in sel.find_all("option")]
+                  print("SELECT",sel.get("id"),sel.get("name"),opts[:100])
+
+              print("FORMS")
+              for f in s.find_all("form"):
+                  print("FORM",f.get("id"),f.get("action"),f.get("method"))
+                  for x in f.find_all(["input","select","button"]):
+                      print(" FIELD",x.name,x.get("id"),x.get("name"),x.get("value"))
+
+              print("SCRIPTS")
+              for sc in s.find_all("script",src=True):
+                  print("SCRIPT",urljoin(r.url,sc["src"]))
+
+              print("INLINE_MATCHES")
+              for pat in [
+                  r'.{0,220}(?:swap|calendar|csv|json|api|ajax|fetch|year|month|pair).{0,550}',
+                  r'https?://[^"\'<> ]+',
+                  r'/[^"\'<> ]*(?:swap|calendar|csv|json|api)[^"\'<> ]*',
+              ]:
+                  for m in re.finditer(pat,r.text,re.I|re.S):
+                      z=m.group(0).replace("\n"," ")
+                      if any(k in z.lower() for k in ("swap","csv","calendar","api","json","fetch","ajax")):
+                          print(z[:900])
+
+              if name=="lightfx":
+                  print("LIGHTFX_TABLES")
+                  for div_id in ("symbol5","symbol1","symbol2","symbol3","symbol4","symbol6"):
+                      div=s.find(id=div_id)
+                      if not div: continue
+                      table=div.find("table")
+                      if not table: continue
+                      print("HEAD",div_id,[x.get_text(" ",strip=True) for x in table.select("thead th")])
+                      for tr in table.select("tbody tr")[:6]:
+                          print("ROW",div_id,[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])])
+
+              if name in ("hirose","jfx"):
+                  print("TABLE_SAMPLE")
+                  for table in s.find_all("table")[:4]:
+                      print("HEAD", [x.get_text(" ",strip=True) for x in table.find_all("th")][:20])
+                      for tr in table.find_all("tr")[:4]:
+                          print("ROW",[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])][:20])
+          PY

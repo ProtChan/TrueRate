@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import re
+import time
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from datetime import date, datetime
 from zoneinfo import ZoneInfo
@@ -127,18 +128,45 @@ def collect_pair_month(
 ) -> list[SwapRecord]:
     pair_code = pair.replace("/", "").lower()
     url = SOURCE_TEMPLATE.format(pair_code=pair_code, yyyymm=f"{year:04d}{month:02d}")
-    response = requests.get(
-        url,
-        headers={
-            "User-Agent": "Mozilla/5.0",
-            "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
-            "Referer": "https://www.oanda.jp/fx/ny4/swap",
-        },
-        timeout=timeout,
-    )
-    if response.status_code == 404:
-        return []
-    response.raise_for_status()
+    headers = {
+        "User-Agent": "Mozilla/5.0",
+        "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+        "Referer": "https://www.oanda.jp/fx/ny4/swap",
+    }
+
+    response = None
+    for attempt in range(8):
+        # OANDA's public calendar is pair/month scoped and rate-limited.
+        # Pace the initial historical backfill rather than hammering the site.
+        time.sleep(0.35)
+        try:
+            response = requests.get(url, headers=headers, timeout=timeout)
+        except requests.RequestException:
+            if attempt == 7:
+                raise
+            time.sleep(min(2 ** attempt, 20))
+            continue
+
+        if response.status_code == 404:
+            return []
+        if response.status_code != 429:
+            response.raise_for_status()
+            break
+
+        retry_after = response.headers.get("Retry-After")
+        try:
+            wait = float(retry_after) if retry_after else 0.0
+        except ValueError:
+            wait = 0.0
+        if wait <= 0:
+            wait = min(2 ** attempt, 20)
+        time.sleep(wait)
+    else:
+        raise RuntimeError(f"OANDA NY remained rate-limited: {url}")
+
+    if response is None:
+        raise RuntimeError(f"OANDA NY request produced no response: {url}")
+
     return parse_month_payload(
         response.json(),
         year=year,
@@ -155,7 +183,7 @@ def collect_month(
     *,
     timeout: int = 30,
     today_jst: date | None = None,
-    max_workers: int = 12,
+    max_workers: int = 3,
 ) -> list[SwapRecord]:
     records: list[SwapRecord] = []
     with ThreadPoolExecutor(max_workers=max_workers) as pool:

@@ -1,0 +1,74 @@
+name: Inspect Ainet FX swap source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-ainet.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - name: Inspect official Ainet page
+        run: |
+          python - <<'PY'
+          import requests,re
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+          h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en-US;q=0.9,en;q=0.8"}
+          u="https://inet-sec.co.jp/study/fx-guide/swap-point/"
+          r=requests.get(u,headers=h,timeout=30)
+          print("PAGE",r.status_code,r.url,len(r.text),r.headers.get("content-type"))
+          r.raise_for_status()
+          r.encoding=r.apparent_encoding or r.encoding
+          soup=BeautifulSoup(r.text,"html.parser")
+
+          print("TABLES")
+          for i,table in enumerate(soup.find_all("table")):
+              rows=[]
+              for tr in table.find_all("tr")[:20]:
+                  cells=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
+                  if cells: rows.append(cells)
+              if rows:
+                  print("TABLE",i)
+                  for row in rows: print("ROW",row[:30])
+
+          print("SCRIPTS")
+          for sc in soup.find_all("script"):
+              src=sc.get("src")
+              if src:
+                  su=urljoin(r.url,src)
+                  print("SCRIPT",su)
+                  try:
+                      x=requests.get(su,headers=h,timeout=30)
+                      if any(k in x.text.lower() for k in ("swap","calendar","ajax","json","api","fetch")):
+                          print("RELEVANT",su,len(x.text))
+                          for line in x.text.splitlines():
+                              if any(k in line.lower() for k in ("swap","calendar","ajax","json","api","fetch")):
+                                  print("JSLINE",line[:2200])
+                  except Exception as e:
+                      print("ERR",e)
+              else:
+                  txt=sc.get_text("\n")
+                  if any(k in txt.lower() for k in ("swap","calendar","ajax","json","api","fetch")):
+                      print("INLINE",txt[:10000].replace("\n"," | "))
+
+          print("LINKS")
+          for tag in soup.find_all(["a","link"],href=True):
+              href=urljoin(r.url,tag["href"])
+              txt=tag.get_text(" ",strip=True)
+              if any(k in (href+" "+txt).lower() for k in ("swap","calendar","csv","json")):
+                  print("LINK",txt[:100],href)
+
+          print("URLLIKE")
+          for m in re.finditer(r'[^"\'\s<>]{0,100}(?:swap|calendar|json|csv|api)[^"\'\s<>]{0,180}',r.text,re.I):
+              print("URLLIKE",m.group(0)[:500])
+          PY

@@ -112,3 +112,16 @@ fetched_at
 ~~~
 
 The site-data schema is already broker-keyed by currency pair, so the front end can compare multiple brokers without changing the chart model.
+
+
+## One-time GitHub Pages activation
+
+The data updater does not depend on Pages and keeps collecting data even before the site is published.
+
+For the public dashboard, GitHub Pages must be enabled once for this repository:
+
+1. Open **Settings → Pages**.
+2. Under **Build and deployment**, set **Source** to **GitHub Actions**.
+3. Run the **Deploy Pages** workflow once (or wait for the next data update).
+
+After that, every committed update to `site/data/site-data.json` automatically triggers a fresh Pages deployment.

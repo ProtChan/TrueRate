@@ -1,82 +1,42 @@
-name: Update data and deploy Pages
+name: Deploy Pages
 
 on:
   push:
     branches:
       - main
-    paths-ignore:
-      - "data/**"
-      - "site/data/**"
-  schedule:
-    # 09:15 JST. GMO Gaika credits after the NY close around 06:00/07:00 JST.
-    - cron: "15 0 * * *"
+    paths:
+      - "site/**"
+      - ".github/workflows/pages.yml"
   workflow_dispatch:
 
 permissions:
-  contents: write
+  contents: read
   pages: write
   id-token: write
 
 concurrency:
   group: truerate-pages
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 jobs:
-  build:
-    runs-on: ubuntu-latest
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-          cache: pip
-
-      - name: Install dependencies
-        run: pip install -r requirements.txt
-
-      - name: Run unit tests
-        env:
-          PYTHONPATH: src
-        run: python -m unittest discover -s tests -v
-
-      - name: Refresh swap and FX reference data
-        run: python scripts/update_data.py
-
-      - name: Commit refreshed data
-        run: |
-          git config user.name "truerate-bot"
-          git config user.email "actions@users.noreply.github.com"
-          git add data/swaps data/rates site/data
-          if git diff --cached --quiet; then
-            echo "No data changes"
-          else
-            git commit -m "data: refresh daily rates and swaps"
-            git push
-          fi
-
-      - name: Configure GitHub Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload Pages artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-
   deploy:
-    needs: build
     runs-on: ubuntu-latest
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
+
     steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Configure GitHub Pages
+        uses: actions/configure-pages@v5
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
       - name: Deploy GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

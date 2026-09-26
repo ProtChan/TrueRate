@@ -1,0 +1,36 @@
+name: Verify margin yield source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-margin-yield.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - name: Verify applicable margin schedule
+        env:
+          PYTHONPATH: src
+        run: |
+          python - <<'PY'
+          from datetime import date
+          from truerate.margins import build_margin_requirements
+          data=build_margin_requirements(date(2026,9,26))
+          c=data["click365"]
+          print("EFFECTIVE",c["effective_start"],c["effective_end"])
+          print("USDJPY",c["per_pair_jpy"]["USD/JPY"])
+          print("HUFJPY",c["per_pair_jpy"]["HUF/JPY"])
+          print("OTC_GMO",data["margin_rate_by_broker"]["gmo_click"])
+          PY
+      - name: Check frontend JavaScript
+        run: node --check site/app.js

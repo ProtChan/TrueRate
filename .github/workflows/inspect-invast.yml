@@ -31,6 +31,13 @@ jobs:
           print("PAGE",r.status_code,r.url,len(r.text))
           scripts=re.findall(r'<script[^>]+src=["\']([^"\']+)',r.text,re.I)
           print("SCRIPTS",scripts)
+          print("\nPAGE MATCHES")
+          pats=[r'https?://[^"\'<> ]+', r'/swappoint/[^"\'<> ]+', r'.{0,220}cllAPI.{0,420}', r'.{0,220}(?:swapData|swap_data|adddays|pairCode|pair_id).{0,420}']
+          for pat in pats:
+              for m in re.finditer(pat,r.text,re.I|re.S):
+                  s=m.group(0).replace("\n"," ")
+                  if "swap" in s.lower() or "cllapi" in s.lower() or "adddays" in s.lower():
+                      print(s[:700])
           for src in scripts:
               u=urljoin(r.url,src)
               try:

@@ -30,6 +30,64 @@ jobs:
             "hirose":"https://hirose-fx.co.jp/contents/news/Swap",
             "jfx":"https://info.jfx.co.jp/jfxapl/mnavi/mnavi_SwapPoint.jsp",
           }
+          # Focused probes before the broad dump.
+          print("\n==== focused probes ====")
+          # Hirose historical CSV
+          hu="https://hirose-fx.co.jp/swap/lionfx_swap.csv"
+          hr=requests.get(hu,headers=h,timeout=30)
+          print("HIROSE_CSV",hr.status_code,len(hr.content),hr.headers.get("content-type"))
+          for enc in ("cp932","utf-8-sig","shift_jis"):
+              try:
+                  txt=hr.content.decode(enc)
+                  print("HIROSE_ENCODING",enc)
+                  print(txt[:7000])
+                  print("HIROSE_TAIL",txt[-3500:])
+                  break
+              except Exception:
+                  pass
+
+          # SBI historical month POST probes.
+          su=pages["sbi"]
+          session=requests.Session()
+          session.headers.update(h)
+          landing=session.get(su,timeout=30)
+          ss=BeautifulSoup(landing.text,"html.parser")
+          guid=(ss.find("input",{"name":"GUID"}) or {}).get("value") if ss.find("input",{"name":"GUID"}) else None
+          for y,m in ((2026,"08"),(2025,"12"),(2024,"01")):
+              payload={"YEAR":str(y),"MONTH":m,"pcTerminal":"検索","SELECTED_TERMINAL":"pcTerminal","SELECTED_CURRENCY_UNIT":"tenThousandCurrencyUnit"}
+              if guid: payload["GUID"]=guid
+              q=session.post("https://www.sbifxt.co.jp/FXTAccount/pc/SWHis?RICH=Y",data=payload,timeout=30)
+              qs=BeautifulSoup(q.text,"html.parser")
+              rows=[]
+              table=qs.find("table")
+              if table:
+                  for tr in table.find_all("tr")[:8]:
+                      cells=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
+                      if cells: rows.append(cells)
+              selected=[o.get("value") for o in qs.select("#YEAR option[selected], #MONTH option[selected]")]
+              print("SBI_PROBE",y,m,q.status_code,q.url,len(q.text),"selected",selected,"rows",rows[:5])
+
+          # JFX direct iframe/date probes.
+          ju=pages["jfx"]
+          js=requests.Session()
+          js.headers.update(h)
+          for st in ("20260924","P20260924","20250924"):
+              parent=js.get(ju,params={"stdate":st},timeout=30)
+              ps=BeautifulSoup(parent.text,"html.parser")
+              iframe=ps.find("iframe")
+              print("JFX_PARENT",st,parent.status_code,parent.url,len(parent.text),"iframe",iframe.get("src") if iframe else None)
+              if iframe:
+                  iu=urljoin(parent.url,iframe.get("src"))
+                  ir=js.get(iu,headers={**h,"Referer":parent.url},timeout=30)
+                  ins=BeautifulSoup(ir.text,"html.parser")
+                  print("JFX_IFRAME",st,ir.status_code,ir.url,len(ir.text),ir.headers.get("content-type"))
+                  for i,table in enumerate(ins.find_all("table")[:8]):
+                      rows=[]
+                      for tr in table.find_all("tr")[:8]:
+                          cells=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
+                          if cells: rows.append(cells)
+                      if rows: print(" JFX_TABLE",i,rows[:6])
+
           for name,u in pages.items():
               print("\n====",name,u,"====")
               r=requests.get(u,headers=h,timeout=30)

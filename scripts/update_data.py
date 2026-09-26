@@ -14,6 +14,7 @@ SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
 from truerate.brokers.dmm_fx import collect_recent_products as collect_dmm_products
+from truerate.brokers.rakuten_fx import collect_recent as collect_rakuten_recent
 from truerate.brokers.click365 import collect_period as collect_click365_period
 from truerate.brokers.fxbroadnet import collect_month as collect_fxbroadnet_month
 from truerate.brokers.matsui_fx import collect_year as collect_matsui_year
@@ -38,6 +39,7 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
+RAKUTEN_SWAP_PATH = ROOT / "data" / "swaps" / "rakuten_fx.csv"
 DMM_SWAP_PATH = ROOT / "data" / "swaps" / "dmm_fx.csv"
 DMM_MINI_SWAP_PATH = ROOT / "data" / "swaps" / "dmm_fx_mini.csv"
 DMM_LARGE_SWAP_PATH = ROOT / "data" / "swaps" / "dmm_fx_large.csv"
@@ -263,6 +265,17 @@ def refresh_sbi(
     merged = merge_swaps(existing, incoming)
     write_csv(SBI_SWAP_PATH, merged, SWAP_FIELDS)
     return merged
+
+
+def refresh_rakuten(today: date) -> list[dict[str, str]]:
+    existing = load_csv(RAKUTEN_SWAP_PATH)
+    print("Collecting Rakuten FX public swap feed...")
+    records = collect_rakuten_recent(today_jst=today)
+    pair_count = len({record.pair for record in records})
+    print(f"  {len(records)} rows / {pair_count} pairs")
+    if pair_count < 35:
+        raise RuntimeError("Rakuten FX collector returned fewer than 35 pairs.")
+    return _merge_and_write(RAKUTEN_SWAP_PATH, existing, records)
 
 
 def refresh_dmm(today: date) -> tuple[list[dict[str, str]], list[dict[str, str]], list[dict[str, str]]]:
@@ -600,6 +613,7 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
+    rakuten_swaps = refresh_rakuten(today)
     dmm_swaps, dmm_mini_swaps, dmm_large_swaps = refresh_dmm(today)
     click365_swaps = refresh_click365(today, full=args.full, start=args.click365_start)
     matsui_swaps = refresh_matsui(today, full=args.full, start=args.matsui_start)
@@ -614,7 +628,8 @@ def main() -> int:
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
     swaps = (
-        dmm_swaps
+        rakuten_swaps
+        + dmm_swaps
         + dmm_mini_swaps
         + dmm_large_swaps
         + click365_swaps

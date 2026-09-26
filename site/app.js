@@ -21,6 +21,7 @@ const state = {
 };
 
 const BROKER_COLORS = {
+  rakuten_fx: "#e11d48",
   dmm_fx: "#8b5cf6",
   dmm_fx_mini: "#a78bfa",
   dmm_fx_large: "#6d28d9",

@@ -43,17 +43,24 @@ function cutoffFor(points) {
   return cutoff.toISOString().slice(0, 10);
 }
 
-function rebase(rawPoints) {
+function periodPoints(rawPoints) {
   if (!rawPoints?.length) return [];
   const cutoff = cutoffFor(rawPoints);
-  const points = cutoff ? rawPoints.filter((point) => point.date >= cutoff) : rawPoints;
-  if (!points.length) return [];
+  return cutoff ? rawPoints.filter((point) => point.date >= cutoff) : rawPoints.slice();
+}
 
-  const first = points[0];
+function rebase(points, commonStartDate = null) {
+  if (!points?.length) return [];
+  const aligned = commonStartDate
+    ? points.filter((point) => point.date >= commonStartDate)
+    : points;
+  if (!aligned.length) return [];
+
+  const first = aligned[0];
   const unit = state.data.metadata.unit;
   const initialNotionalJpy = unit * first.base_jpy;
 
-  return points.map((point) => {
+  return aligned.map((point) => {
     const fxLongJpy = unit * (point.spot - first.spot) * point.quote_jpy;
     const longSwapJpy = point.cum_long_swap_jpy - first.cum_long_swap_jpy;
     const shortSwapJpy = point.cum_short_swap_jpy - first.cum_short_swap_jpy;
@@ -77,14 +84,30 @@ function rebase(rawPoints) {
 
 function activeBrokerSeries() {
   const pairSeries = state.data.series[state.pair] || {};
-  const series = [];
+  const candidates = [];
+
   for (const broker of state.brokers) {
     const item = pairSeries[broker];
     if (!item) continue;
-    const points = rebase(item.points);
-    if (points.length) series.push({ broker, points });
+    const points = periodPoints(item.points);
+    if (points.length) candidates.push({ broker, points });
   }
-  return series;
+
+  if (!candidates.length) return [];
+
+  // Broker comparison must use one identical visible holding period.
+  // A broker with shorter history therefore determines the common start.
+  const commonStartDate = candidates
+    .map((item) => item.points[0].date)
+    .sort()
+    .at(-1);
+
+  return candidates
+    .map((item) => ({
+      broker: item.broker,
+      points: rebase(item.points, commonStartDate),
+    }))
+    .filter((item) => item.points.length);
 }
 
 function renderBrokerButtons() {

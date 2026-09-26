@@ -27,7 +27,8 @@ from truerate.brokers.hirose import collect_history as collect_hirose_history
 from truerate.brokers.jfx import collect_history as collect_jfx_history
 from truerate.brokers.lightfx import collect_recent_products as collect_lightfx_products
 from truerate.brokers.minfx import collect_recent_products as collect_minfx_products
-from truerate.brokers.saxo_fx import collect_history as collect_saxo_history\nfrom truerate.brokers.sbi_fx import (
+from truerate.brokers.saxo_fx import collect_history as collect_saxo_history
+from truerate.brokers.sbi_fx import (
     collect_month as collect_sbi_month,
     effective_date_for_trade_date as sbi_effective_date_for_trade_date,
 )
@@ -43,7 +44,8 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
-SAXO_SWAP_PATH = ROOT / "data" / "swaps" / "saxo_fx.csv"\nOANDA_NY_SWAP_PATH = ROOT / "data" / "swaps" / "oanda_ny.csv"
+SAXO_SWAP_PATH = ROOT / "data" / "swaps" / "saxo_fx.csv"
+OANDA_NY_SWAP_PATH = ROOT / "data" / "swaps" / "oanda_ny.csv"
 OANDA_TOKYO_SWAP_PATH = ROOT / "data" / "swaps" / "oanda_tokyo.csv"
 GAITAME_ONLINE_SWAP_PATH = ROOT / "data" / "swaps" / "gaitame_online.csv"
 AINET_SWAP_PATH = ROOT / "data" / "swaps" / "ainet_fx.csv"
@@ -748,7 +750,8 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
-    saxo_swaps = refresh_saxo(today)\n    oanda_ny_swaps = refresh_oanda_ny(
+    saxo_swaps = refresh_saxo(today)
+    oanda_ny_swaps = refresh_oanda_ny(
         today,
         full=args.full,
         start=args.oanda_ny_start,
@@ -775,7 +778,8 @@ def main() -> int:
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
     swaps = (
-        saxo_swaps\n        + oanda_ny_swaps
+        saxo_swaps
+        + oanda_ny_swaps
         + oanda_tokyo_swaps
         + gaitame_online_swaps
         + ainet_swaps

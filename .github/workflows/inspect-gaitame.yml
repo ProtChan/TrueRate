@@ -1,0 +1,55 @@
+name: Inspect Gaitame swap source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-gaitame.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - name: Inspect official calendar internals
+        run: |
+          python - <<'PY'
+          import re, requests
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+          u="https://www.gaitame.com/service/fx/swap-cal.html"
+          h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en;q=0.8"}
+          r=requests.get(u,headers=h,timeout=30)
+          print("PAGE",r.status_code,r.url,len(r.text))
+          soup=BeautifulSoup(r.text,"html.parser")
+          for s in soup.find_all("script",src=True):
+              print("SCRIPT",urljoin(r.url,s["src"]))
+          pats=[
+            r'.{0,220}(?:swap|calendar|api|json|csv|ajax|fetch).{0,450}',
+            r'https?://[^"\'<> ]+',
+            r'/[^"\'<> ]*(?:swap|calendar|api|json|csv)[^"\'<> ]*',
+          ]
+          print("\nINLINE")
+          for pat in pats:
+              for m in re.finditer(pat,r.text,re.I|re.S):
+                  s=m.group(0).replace("\n"," ")
+                  if any(k in s.lower() for k in ("swap","calendar","json","csv","api")):
+                      print(s[:900])
+          print("\nASSETS")
+          for s in soup.find_all("script",src=True):
+              su=urljoin(r.url,s["src"])
+              try:
+                  x=requests.get(su,headers=h,timeout=30)
+                  print("\nASSET",x.status_code,su,len(x.text))
+                  for m in re.finditer(r'.{0,260}(?:swap|calendar|api|json|csv|ajax|fetch).{0,600}',x.text,re.I|re.S):
+                      z=m.group(0).replace("\n"," ")
+                      print(z[:1200])
+              except Exception as e:
+                  print("ERR",su,e)
+          PY

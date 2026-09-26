@@ -9,7 +9,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from truerate.models import SwapRecord
+from truerate.models import SwapRecord, next_business_day_after
 
 BROKER_ID = "gaitame_com"
 BROKER_NAME = "外為どっとコム"
@@ -153,7 +153,7 @@ def parse_month_csv(
             continue
 
         trade_date = date(year, month, day)
-        effective_date = trade_date + timedelta(days=1)
+        effective_date = next_business_day_after(trade_date)
 
         for offset, pair in pair_columns:
             if offset + 2 >= len(row):

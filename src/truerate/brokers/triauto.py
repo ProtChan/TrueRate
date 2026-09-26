@@ -6,7 +6,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from truerate.models import SwapRecord
+from truerate.models import SwapRecord, next_business_day_after
 
 BROKER_ID = "triauto"
 BROKER_NAME = "トライオートFX"
@@ -156,7 +156,7 @@ def parse_month_payload(
                 continue
             sp_days = int(sp_days_value)
 
-            effective_date = trade_date + timedelta(days=1)
+            effective_date = next_business_day_after(trade_date)
             status = "confirmed" if effective_date <= today_jst else "scheduled"
 
             records.append(

@@ -32,6 +32,7 @@ from truerate.brokers.gmo_click import (
 from truerate.brokers.gmo_gaika import collect_month as collect_gmo_gaika_month, iter_months
 from truerate.brokers.triauto import collect_month as collect_triauto_month
 from truerate.margins import build_margin_requirements
+from truerate.models import next_business_day_after
 from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
@@ -100,10 +101,23 @@ def write_csv(path: Path, rows: list[dict[str, str]], fields: list[str]) -> None
     temp.replace(path)
 
 
+def _normalize_effective_date(row: dict[str, str]) -> dict[str, str]:
+    normalized = dict(row)
+    trade_date = date.fromisoformat(normalized["trade_date"])
+    if normalized.get("broker") == "sbi_fx":
+        effective_date = sbi_effective_date_for_trade_date(trade_date)
+    else:
+        effective_date = next_business_day_after(trade_date)
+    normalized["effective_date"] = effective_date.isoformat()
+    return normalized
+
+
 def merge_swaps(
     existing: list[dict[str, str]],
     incoming: list[dict[str, str]],
 ) -> list[dict[str, str]]:
+    existing = [_normalize_effective_date(row) for row in existing]
+    incoming = [_normalize_effective_date(row) for row in incoming]
     merged = {(row["broker"], row["pair"], row["trade_date"]): row for row in existing}
 
     for row in incoming:

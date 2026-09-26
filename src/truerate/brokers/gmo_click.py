@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 
-from truerate.models import SwapRecord
+from truerate.models import SwapRecord, next_business_day_after
 
 BROKER_ID = "gmo_click"
 BROKER_NAME = "GMOクリック証券"
@@ -104,7 +104,7 @@ def parse_calendar_html(
     GMO Click labels each row with the date whose New York close causes the
     swap to arise and be reflected in account equity. TrueRate keeps that
     source date as trade_date and places the cashflow in the next JST calendar
-    day's index using effective_date = trade_date + 1 day.
+    day's index using effective_date = next business day after trade_date.
     """
     pair = pair.upper()
     if pair not in PAIR_UNITS:
@@ -144,7 +144,7 @@ def parse_calendar_html(
                 continue
 
             trade_date = date(year, month, day)
-            effective_date = trade_date + timedelta(days=1)
+            effective_date = next_business_day_after(trade_date)
             amounts_present = long_swap is not None and short_swap is not None
             status = (
                 "confirmed"

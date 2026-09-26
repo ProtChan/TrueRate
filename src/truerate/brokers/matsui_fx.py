@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from truerate.models import SwapRecord
+from truerate.models import SwapRecord, next_business_day_after
 
 BROKER_ID = "matsui_fx"
 BROKER_NAME = "松井証券FX"
@@ -92,7 +92,7 @@ def parse_year_csv(
         if sp_days_raw is None or short_swap is None or long_swap is None:
             continue
 
-        effective_date = trade_date + timedelta(days=1)
+        effective_date = next_business_day_after(trade_date)
         records.append(
             SwapRecord(
                 broker=BROKER_ID,

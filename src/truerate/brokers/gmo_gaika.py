@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 
-from truerate.models import SwapRecord
+from truerate.models import SwapRecord, next_business_day_after
 
 BROKER_ID = "gmo_gaika"
 BROKER_NAME = "GMO外貨"
@@ -113,7 +113,7 @@ def parse_calendar_html(
                 continue
 
             trade_date = date(year, month, day)
-            effective_date = trade_date + timedelta(days=1)
+            effective_date = next_business_day_after(trade_date)
 
             for index, pair in enumerate(pairs):
                 offset = index * 3

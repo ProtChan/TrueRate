@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 import requests
 from pypdf import PdfReader
 
-from truerate.models import SwapRecord
+from truerate.models import SwapRecord, next_business_day_after
 
 BROKER_ID = "fxbroadnet"
 BROKER_NAME = "FXブロードネット"
@@ -95,7 +95,7 @@ def parse_page_text(
             if sp_days is None or short_swap is None or long_swap is None:
                 continue
 
-            effective_date = trade_date + timedelta(days=1)
+            effective_date = next_business_day_after(trade_date)
             records.append(
                 SwapRecord(
                     broker=BROKER_ID,

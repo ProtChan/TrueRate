@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from truerate.models import SwapRecord
+from truerate.models import SwapRecord, next_business_day_after
 
 BROKER_ID = "jfx"
 BROKER_NAME = "JFX MATRIX TRADER"
@@ -95,7 +95,7 @@ def parse_history_csv(
         for trade_date, sell, buy in values:
             if trade_date < active_start or sell is None or buy is None:
                 continue
-            effective_date = trade_date + timedelta(days=1)
+            effective_date = next_business_day_after(trade_date)
             records.append(
                 SwapRecord(
                     broker=BROKER_ID,

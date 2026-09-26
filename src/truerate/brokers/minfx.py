@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 import requests
 from bs4 import BeautifulSoup
 
-from truerate.models import SwapRecord
+from truerate.models import SwapRecord, next_business_day_after
 
 BROKER_ID = "minfx"
 LIGHT_BROKER_ID = "minfx_light"
@@ -131,7 +131,7 @@ def parse_calendar_html(
                 int(match.group(2)),
                 today_jst,
             )
-            effective_date = trade_date + timedelta(days=1)
+            effective_date = next_business_day_after(trade_date)
 
             for column, pair in pair_columns:
                 if column >= len(date_cells):

@@ -60,7 +60,7 @@ class MinFxParserTest(unittest.TestCase):
         )
         usd = next(item for item in records if item.pair == "USD/JPY")
         self.assertEqual(usd.trade_date, date(2026, 9, 25))
-        self.assertEqual(usd.effective_date, date(2026, 9, 26))
+        self.assertEqual(usd.effective_date, date(2026, 9, 28))
         self.assertEqual(usd.long_swap_jpy, 118.0)
         self.assertEqual(usd.short_swap_jpy, -118.0)
         self.assertEqual(usd.unit, 10_000)

@@ -7,7 +7,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from truerate.models import SwapRecord
+from truerate.models import SwapRecord, next_business_day_after
 
 BROKER_ID = "click365"
 BROKER_NAME = "くりっく365"
@@ -83,7 +83,7 @@ def parse_summary_csv(
         if swap is None:
             swap = 0.0
 
-        effective_date = trade_date + timedelta(days=1)
+        effective_date = next_business_day_after(trade_date)
         quote = pair.split("/", 1)[1]
         records.append(
             SwapRecord(

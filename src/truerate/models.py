@@ -1,8 +1,16 @@
 from __future__ import annotations
 
 from dataclasses import asdict, dataclass
-from datetime import date
+from datetime import date, timedelta
 from typing import Optional
+
+
+def next_business_day_after(value: date) -> date:
+    """Return the next Monday-Friday date strictly after value."""
+    candidate = value + timedelta(days=1)
+    while candidate.weekday() >= 5:
+        candidate += timedelta(days=1)
+    return candidate
 
 
 @dataclass(frozen=True)

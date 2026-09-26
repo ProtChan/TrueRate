@@ -251,17 +251,17 @@ function defaultBrokerSelection() {
   if (!entries.length) return new Set();
 
   let longestBroker = null;
-  let earliestStart = null;
+  let longestDays = -1;
   let bestSwapBroker = null;
-  let bestSwap = -Infinity;
+  let bestSwapPerDay = -Infinity;
 
   for (const [broker, item] of entries) {
     const rawPoints = item.points || [];
     if (!rawPoints.length) continue;
 
-    const start = rawPoints[0].date;
-    if (earliestStart === null || start < earliestStart) {
-      earliestStart = start;
+    const historyDays = daysBetween(rawPoints[0].date, rawPoints.at(-1).date);
+    if (historyDays > longestDays) {
+      longestDays = historyDays;
       longestBroker = broker;
     }
 
@@ -269,15 +269,18 @@ function defaultBrokerSelection() {
     if (points.length < 2) continue;
     const first = points[0];
     const last = points.at(-1);
-    const longSwap = last.cum_long_swap_jpy - first.cum_long_swap_jpy;
-    const shortSwap = last.cum_short_swap_jpy - first.cum_short_swap_jpy;
-    const candidateSwap =
-      state.side === "long" ? longSwap :
-      state.side === "short" ? shortSwap :
-      Math.max(longSwap, shortSwap);
+    const holdingDays = Math.max(1, daysBetween(first.date, last.date));
+    const longSwapPerDay =
+      (last.cum_long_swap_jpy - first.cum_long_swap_jpy) / holdingDays;
+    const shortSwapPerDay =
+      (last.cum_short_swap_jpy - first.cum_short_swap_jpy) / holdingDays;
+    const candidateSwapPerDay =
+      state.side === "long" ? longSwapPerDay :
+      state.side === "short" ? shortSwapPerDay :
+      Math.max(longSwapPerDay, shortSwapPerDay);
 
-    if (Number.isFinite(candidateSwap) && candidateSwap > bestSwap) {
-      bestSwap = candidateSwap;
+    if (Number.isFinite(candidateSwapPerDay) && candidateSwapPerDay > bestSwapPerDay) {
+      bestSwapPerDay = candidateSwapPerDay;
       bestSwapBroker = broker;
     }
   }
@@ -286,7 +289,8 @@ function defaultBrokerSelection() {
   if (bestSwapBroker) selected.add(bestSwapBroker);
   if (longestBroker) selected.add(longestBroker);
 
-  // Defensive fallback if the pair has data but no usable swap window.
+  // If one broker is both best-swap and longest-history, showing one line is
+  // intentional; the user can add any other broker manually.
   if (!selected.size && entries[0]) selected.add(entries[0][0]);
   return selected;
 }

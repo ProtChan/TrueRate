@@ -4,6 +4,8 @@ TrueRate is a static FX total-return dashboard that separates common market move
 
 Supported brokers/products:
 
+- **アイネットFX**
+- **アイネットFX ループイフダン**
 - **楽天FX**
 - **DMM FX**
 - **DMM FX Mini**
@@ -56,6 +58,7 @@ The browser rebases broker-to-broker comparisons to a shared visible start date.
 
 ## Data sources
 
+- アイネットFX / ループイフダン: official current/previous-month swap-calendar PDFs
 - 楽天FX: official public latest swap feed; TrueRate accumulates the daily published values
 - DMM FX / Mini / Large: official public swap-calendar JSON API
 - くりっく365: 東京金融取引所 official historical FX CSV (swap point)
@@ -87,6 +90,7 @@ scripts/
   update_data.py         incremental collection/build pipeline
 
 src/truerate/
+  brokers/ainet_fx.py    アイネットFX + ループイフダン PDF collector
   brokers/rakuten_fx.py  楽天FX public latest-swap collector
   brokers/dmm_fx.py      DMM FX / Mini / Large rolling API collector
   brokers/click365.py    くりっく365 TFX historical collector
@@ -122,6 +126,7 @@ The data workflow runs every day at **09:15 JST**.
 
 On a new data set:
 
+- アイネットFX / ループイフダン import official current and previous month PDFs and then accumulate history daily in TrueRate
 - 楽天FX imports the official latest-value feed and accumulates history daily in TrueRate
 - DMM FX / Mini / Large import the public rolling API (roughly the latest two months) and then accumulate history daily in TrueRate
 - くりっく365 backfills from `2021-01`
@@ -136,7 +141,7 @@ On a new data set:
 - GMOクリック証券 backfills from `2024-01`
 - トライオートFX backfills from `2024-01`
 
-After the initial backfill, monthly-history brokers refresh their recent months. 楽天FX, DMM FX and みんなのFX/LIGHT系 refresh their official rolling data and merge those rows into TrueRate's retained history. Historical confirmed values are preserved, reference rates are updated, the site payload is rebuilt, and GitHub Pages is deployed in the same workflow.
+After the initial backfill, monthly-history brokers refresh their recent months. アイネットFX, 楽天FX, DMM FX and みんなのFX/LIGHT系 refresh their official rolling data and merge those rows into TrueRate's retained history. Historical confirmed values are preserved, reference rates are updated, the site payload is rebuilt, and GitHub Pages is deployed in the same workflow.
 
 Historical starts can be changed with:
 

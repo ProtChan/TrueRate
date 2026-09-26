@@ -13,6 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
+from truerate.brokers.ainet_fx import collect_recent_products as collect_ainet_products
 from truerate.brokers.dmm_fx import collect_recent_products as collect_dmm_products
 from truerate.brokers.rakuten_fx import collect_recent as collect_rakuten_recent
 from truerate.brokers.click365 import collect_period as collect_click365_period
@@ -39,6 +40,8 @@ from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
+AINET_SWAP_PATH = ROOT / "data" / "swaps" / "ainet_fx.csv"
+AINET_LOOP_SWAP_PATH = ROOT / "data" / "swaps" / "ainet_loop.csv"
 RAKUTEN_SWAP_PATH = ROOT / "data" / "swaps" / "rakuten_fx.csv"
 DMM_SWAP_PATH = ROOT / "data" / "swaps" / "dmm_fx.csv"
 DMM_MINI_SWAP_PATH = ROOT / "data" / "swaps" / "dmm_fx_mini.csv"
@@ -265,6 +268,27 @@ def refresh_sbi(
     merged = merge_swaps(existing, incoming)
     write_csv(SBI_SWAP_PATH, merged, SWAP_FIELDS)
     return merged
+
+
+def refresh_ainet(today: date) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    regular_existing = load_csv(AINET_SWAP_PATH)
+    loop_existing = load_csv(AINET_LOOP_SWAP_PATH)
+    print("Collecting Ainet FX regular + Loop-if-done current/previous month PDFs...")
+    regular_records, loop_records = collect_ainet_products(today_jst=today)
+    regular_pairs = len({record.pair for record in regular_records})
+    loop_pairs = len({record.pair for record in loop_records})
+    print(f"  regular: {len(regular_records)} rows / {regular_pairs} pairs")
+    print(f"  loop: {len(loop_records)} rows / {loop_pairs} pairs")
+
+    if regular_pairs < 22 or loop_pairs < 22:
+        raise RuntimeError(
+            "Ainet FX collector returned an unexpectedly small pair set; "
+            "refusing to publish possibly broken PDF data."
+        )
+
+    regular = _merge_and_write(AINET_SWAP_PATH, regular_existing, regular_records)
+    loop = _merge_and_write(AINET_LOOP_SWAP_PATH, loop_existing, loop_records)
+    return regular, loop
 
 
 def refresh_rakuten(today: date) -> list[dict[str, str]]:
@@ -613,6 +637,7 @@ def main() -> int:
     now = datetime.now(tz=JST)
     today = now.date()
 
+    ainet_swaps, ainet_loop_swaps = refresh_ainet(today)
     rakuten_swaps = refresh_rakuten(today)
     dmm_swaps, dmm_mini_swaps, dmm_large_swaps = refresh_dmm(today)
     click365_swaps = refresh_click365(today, full=args.full, start=args.click365_start)
@@ -628,7 +653,9 @@ def main() -> int:
     click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
     triauto_swaps = refresh_triauto(today, full=args.full, start=args.triauto_start)
     swaps = (
-        rakuten_swaps
+        ainet_swaps
+        + ainet_loop_swaps
+        + rakuten_swaps
         + dmm_swaps
         + dmm_mini_swaps
         + dmm_large_swaps

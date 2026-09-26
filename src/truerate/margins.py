@@ -11,7 +11,7 @@ from truerate.brokers.click365 import CROSS_PAIRS, JPY_PAIRS, PAIR_UNITS
 from truerate.series import BROKERS
 
 TFX_MARGIN_URL_TEMPLATE = "https://www.tfx.co.jp/mkinfo/data/{yyyymmdd}fxmargin.csv"
-OANDA_NY_MARGIN_URL = "https://www.oanda.jp/fx/ny4/retail-lineup"
+OANDA_NY_MARGIN_URL = "https://www.oanda.jp/fx/ny4/retail-lineup"\nSAXO_MARGIN_URL = "https://www.home.saxo/ja-jp/campaigns/forex-list"
 
 # Domestic retail OTC FX products in this project use the 25x retail basis.
 # Keep this broker-specific so exceptions can be changed without touching the UI.
@@ -150,12 +150,50 @@ def fetch_oanda_ny_margin_rates(
     return rates
 
 
+def fetch_saxo_margin_rates(
+    *,
+    session: requests.Session | None = None,
+    timeout: int = 30,
+) -> dict[str, float]:
+    client = session or requests.Session()
+    client.headers.update(
+        {
+            "User-Agent": "Mozilla/5.0",
+            "Accept-Language": "ja,en-US;q=0.9,en;q=0.8",
+        }
+    )
+    response = client.get(SAXO_MARGIN_URL, timeout=timeout)
+    response.raise_for_status()
+    soup = BeautifulSoup(response.text, "html.parser")
+    rates: dict[str, float] = {}
+    for row in soup.find_all("tr"):
+        cells = [cell.get_text(" ", strip=True) for cell in row.find_all(["th", "td"])]
+        if len(cells) < 3:
+            continue
+        code = cells[0].replace("/", "").strip().upper()
+        if len(code) != 6 or not code.isalpha():
+            continue
+        rate_text = cells[2].strip().replace("%", "")
+        try:
+            rate = float(rate_text) / 100
+        except ValueError:
+            continue
+        rates[f"{code[:3]}/{code[3:]}"] = rate
+    if len(rates) < 120:
+        raise ValueError("Saxo FX lineup returned fewer than 120 margin rates")
+    return rates
+
+
 def build_margin_requirements(today: date) -> dict:
     pair_rates = {broker: dict(rates) for broker, rates in OTC_PAIR_MARGIN_RATES.items()}
     try:
         pair_rates["oanda_ny"] = fetch_oanda_ny_margin_rates()
     except Exception:
         pair_rates.setdefault("oanda_ny", {})
+    try:
+        pair_rates["saxo_fx"] = fetch_saxo_margin_rates()
+    except Exception:
+        pair_rates.setdefault("saxo_fx", {})
 
     return {
         "method": (

@@ -4,7 +4,7 @@ from collections import defaultdict
 from datetime import date, timedelta
 from typing import Iterable
 
-BROKERS = {
+BROKERS = {\n    "saxo_fx": {\n        "id": "saxo_fx",\n        "name": "サクソバンク証券",\n    },
     "oanda_ny": {
         "id": "oanda_ny",
         "name": "OANDA Japan NY",

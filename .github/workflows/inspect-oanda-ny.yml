@@ -59,6 +59,18 @@ jobs:
                       for m in re.finditer(r'.{0,220}(?:swap|calendar|ajax|json|api|fetch).{0,900}',x.text,re.I|re.S):
                           print("MATCH",m.group(0).replace("\n"," ")[:1400])
               except Exception as e: print("ERR",e)
+          lineup=requests.get("https://www.oanda.jp/fx/ny4/retail-lineup",headers=h,timeout=30)
+          print("LINEUP_PAGE",lineup.status_code,len(lineup.text))
+          ls=BeautifulSoup(lineup.text,"html.parser")
+          for table in ls.find_all("table"):
+              rows=[]
+              for tr in table.find_all("tr"):
+                  cells=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
+                  if cells: rows.append(cells)
+              if any(row and "/" in row[0] for row in rows):
+                  print("LINEUP_TABLE")
+                  for row in rows[:100]: print("LINEUP_ROW",row[:12])
+                  break
           for m in re.finditer(r'.{0,220}(?:swap|calendar|ajax|json|api|fetch).{0,800}',r.text,re.I|re.S):
               z=m.group(0).replace("\n"," ")
               print("INLINE",z[:1400])

@@ -1,0 +1,98 @@
+name: Inspect SBI KRW and Click365
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-sbi-click365.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - name: Inspect sources
+        run: |
+          python - <<'PY'
+          import requests,re,csv,io
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+
+          h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en-US;q=0.9,en;q=0.8"}
+
+          # SBI: inspect unit selectors and compare KRW responses with alternate unit choices.
+          su="https://www.sbifxt.co.jp/fxtaccount/pc/SWHis?RICH=Y"
+          s=requests.Session(); s.headers.update(h)
+          landing=s.get(su,timeout=30)
+          soup=BeautifulSoup(landing.text,"html.parser")
+          print("SBI_PAGE",landing.status_code,landing.url,len(landing.text))
+          for sel in soup.find_all("select"):
+              vals=[(o.get("value"),o.get_text(" ",strip=True),bool(o.get("selected"))) for o in sel.find_all("option")]
+              if any(k in str(sel.get("name","")).lower() for k in ("currency","unit","pair")) or any("通貨" in x[1] for x in vals):
+                  print("SBI_SELECT",sel.get("name"),sel.get("id"),vals[:80])
+          for inp in soup.find_all("input"):
+              if inp.get("name") in ("SELECTED_CURRENCY_UNIT","SELECTED_CURRENCY_PAIR","YEAR","MONTH","MAX_CURRENCY_PAIR"):
+                  print("SBI_INPUT",inp.get("name"),inp.get("value"),inp.get("type"))
+          for unit in ("oneCurrencyUnit","tenThousandCurrencyUnit","hundredThousandCurrencyUnit"):
+              payload={
+                  "YEAR":"2026","MONTH":"09",
+                  "SELECTED_TERMINAL":"mobileTerminal",
+                  "SELECTED_CURRENCY_PAIR":"KRWJPY",
+                  "SELECTED_CURRENCY_UNIT":unit,
+                  "MAX_CURRENCY_PAIR":"34",
+                  "GUID":"1234567890",
+              }
+              r=s.post(su,data=payload,timeout=30)
+              qs=BeautifulSoup(r.text,"html.parser")
+              vals=[]
+              for tr in qs.find_all("tr"):
+                  tds=tr.find_all("td")
+                  if not tds: continue
+                  date_txt=tds[0].get_text(" ",strip=True)
+                  cells=[]
+                  for td in tds[1:]:
+                      if any(cls=="td_commodity_KRWJPY" for cls in td.get("class",[])):
+                          cells.append(td.get_text(" ",strip=True))
+                  if cells: vals.append((date_txt,cells))
+              print("SBI_KRW",unit,r.status_code,r.url,vals[-8:])
+
+          # current repo values aren't available in this no-checkout job, so use source response only.
+
+          # Click365 historical DB form details.
+          tu="https://www.tfx.co.jp/historical/fx/"
+          r=requests.get(tu,headers=h,timeout=30)
+          print("TFX_PAGE",r.status_code,r.url,len(r.text))
+          soup=BeautifulSoup(r.text,"html.parser")
+          for form in soup.find_all("form"):
+              print("TFX_FORM",form.get("action"),form.get("method"),form.get("id"),form.get("name"))
+              for tag in form.find_all(["input","select","button"])[:250]:
+                  print(" ",tag.name,tag.get("name"),tag.get("value"),tag.get("type"),tag.get("id"))
+          for sc in soup.find_all("script",src=True):
+              url=urljoin(r.url,sc["src"])
+              if "histor" in url.lower() or "fx" in url.lower() or "common" in url.lower():
+                  print("TFX_SCRIPT",url)
+                  try:
+                      x=requests.get(url,headers=h,timeout=30)
+                      for m in re.finditer(r'.{0,220}(?:csv|download|summary|historical|swap|ajax|fetch).{0,700}',x.text,re.I|re.S):
+                          z=m.group(0).replace("\n"," ")
+                          print(" TFX_MATCH",z[:1300])
+                  except Exception as e: print(" TFX_ERR",e)
+
+          # One official daily CSV to learn format.
+          cu="https://www.tfx.co.jp/kawase/document/PRT-010-CSV-003-20260924.CSV"
+          cr=requests.get(cu,headers=h,timeout=30)
+          print("TFX_DAILY",cr.status_code,len(cr.content),cr.headers.get("content-type"))
+          for enc in ("cp932","utf-8-sig","shift_jis"):
+              try:
+                  txt=cr.content.decode(enc)
+                  print("TFX_ENC",enc)
+                  print(txt[:9000])
+                  break
+              except Exception: pass
+          PY

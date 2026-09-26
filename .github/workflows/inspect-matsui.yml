@@ -63,6 +63,19 @@ jobs:
                       break
                   except Exception:
                       pass
+          import csv, io
+          print("PAIR_NAMES")
+          for y in (2023,2026):
+              cu=f"https://www.matsui.co.jp/fx/market/past-swap/csv/swap_{y}.csv"
+              cr=requests.get(cu,headers=h,timeout=30)
+              txt=cr.content.decode("cp932")
+              names=sorted({row["通貨ペア"] for row in csv.DictReader(io.StringIO(txt)) if row.get("通貨ペア")})
+              print("MATSUI_PAIRS",y,len(names),names)
+          print("FXB_OLDEST_PROBES")
+          for ym in ("202309","202308","202301","202210"):
+              pu=f"https://www.fxbroadnet.com/pdf/swap_calendar{ym}.pdf"
+              pr=requests.get(pu,headers=h,timeout=30)
+              print("FXB_PDF",ym,pr.status_code,len(pr.content),pr.headers.get("content-type"))
           print("HTML_MATCHES")
           for pat in [
               r'https?://[^"\'<> ]+',

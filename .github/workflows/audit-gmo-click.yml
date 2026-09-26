@@ -89,4 +89,21 @@ jobs:
           print("LIVE_ANOMALIES",live_anomalies)
           print("EXTERNAL_CELLS_PAIRS",sorted(set(x[0] for x in external_cells)))
           print("EXTERNAL_SAMPLES",external_cells[:40])
+
+          print("GBPUSD_ZERO_SOURCE_CHECK")
+          for y,m,days in ((2024,11,{1,27}),(2024,12,{11})):
+              resp=session.get(BASE_URL,params={"year":str(y),"month":f"{m:02d}","pare":"GBPUSD"},timeout=30)
+              resp.raise_for_status()
+              resp.encoding=resp.apparent_encoding or resp.encoding
+              soup=BeautifulSoup(resp.text,"html.parser")
+              for table in soup.find_all("table"):
+                  txt=table.get_text(" ",strip=True)
+                  if not all(x in txt for x in ("取引日","売Swap","買Swap","付与日数")):
+                      continue
+                  for tr in table.find_all("tr"):
+                      vals=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
+                      if len(vals)<4: continue
+                      mt=re.search(r"(\\d{1,2})月(\\d{1,2})日",vals[0])
+                      if mt and int(mt.group(1))==m and int(mt.group(2)) in days:
+                          print("GBPUSD_RAW",y,m,vals[:4])
           PY

@@ -1,0 +1,58 @@
+name: Verify business-day swap timing
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-business-day-timing.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify all persisted effective dates
+        run: |
+          python - <<'PY'
+          import csv
+          from datetime import date, timedelta
+          from pathlib import Path
+
+          def next_business_day_after(d):
+              d += timedelta(days=1)
+              while d.weekday() >= 5:
+                  d += timedelta(days=1)
+              return d
+
+          def sbi_effective(d):
+              if d.weekday() == 5:
+                  return d + timedelta(days=2)
+              if d.weekday() == 6:
+                  return d + timedelta(days=1)
+              return d
+
+          checked=0
+          friday_examples=[]
+          errors=[]
+          for path in sorted(Path("data/swaps").glob("*.csv")):
+              with path.open(encoding="utf-8",newline="") as f:
+                  for row in csv.DictReader(f):
+                      td=date.fromisoformat(row["trade_date"])
+                      ed=date.fromisoformat(row["effective_date"])
+                      expected=sbi_effective(td) if row["broker"]=="sbi_fx" else next_business_day_after(td)
+                      checked += 1
+                      if ed != expected:
+                          errors.append((path.name,row["broker"],row["pair"],td.isoformat(),ed.isoformat(),expected.isoformat()))
+                      if td.weekday()==4 and row["broker"]!="sbi_fx" and len(friday_examples)<20:
+                          friday_examples.append((row["broker"],row["pair"],td.isoformat(),ed.isoformat()))
+                      if row["broker"]!="sbi_fx" and ed.weekday()>=5:
+                          errors.append(("WEEKEND_EFFECTIVE",path.name,row["broker"],row["pair"],td.isoformat(),ed.isoformat()))
+
+          print("CHECKED",checked)
+          print("FRIDAY_EXAMPLES",friday_examples)
+          print("ERRORS",errors[:50])
+          assert not errors, f"{len(errors)} timing errors"
+          PY

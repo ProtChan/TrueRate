@@ -6,6 +6,9 @@ const state = {
   customStart: null,
   brokers: new Set(),
   chart: null,
+  rankingMetric: "totalReturn",
+  rankingDirection: "desc",
+  tableSort: { key: "total", direction: "desc" },
 };
 
 const BROKER_COLORS = {
@@ -16,6 +19,39 @@ const BROKER_COLORS = {
 };
 
 const SPOT_COLOR = "#94a3b8";
+
+const RANKING_METRICS = {
+  totalReturn: {
+    label: "Total Return",
+    defaultDirection: "desc",
+    format: formatPct,
+  },
+  annualizedReturn: {
+    label: "Annualized Return",
+    defaultDirection: "desc",
+    format: formatPct,
+  },
+  swapContribution: {
+    label: "Swap Contribution",
+    defaultDirection: "desc",
+    format: formatPct,
+  },
+  annualizedSwap: {
+    label: "Annualized Swap",
+    defaultDirection: "desc",
+    format: formatPct,
+  },
+  maxDrawdown: {
+    label: "Max Drawdown",
+    defaultDirection: "desc",
+    format: formatPct,
+  },
+  volatility: {
+    label: "Volatility",
+    defaultDirection: "asc",
+    format: formatPct,
+  },
+};
 
 const $ = (id) => document.getElementById(id);
 
@@ -50,6 +86,13 @@ function formatDate(dateText) {
   if (!dateText) return "—";
   const [year, month, day] = dateText.split("-");
   return `${year}/${month}/${day}`;
+}
+
+function daysBetween(start, end) {
+  if (!start || !end) return 0;
+  const startMs = Date.parse(`${start}T00:00:00Z`);
+  const endMs = Date.parse(`${end}T00:00:00Z`);
+  return Math.max(0, Math.round((endMs - startMs) / 86400000));
 }
 
 function cutoffFor(points) {
@@ -118,7 +161,7 @@ function activeBrokerCandidates() {
   return candidates;
 }
 
-function activeBrokerSeries() {
+function comparisonBrokerSeries() {
   const candidates = activeBrokerCandidates();
   if (!candidates.length) return [];
 
@@ -135,16 +178,100 @@ function activeBrokerSeries() {
     .filter((item) => item.points.length);
 }
 
+function chartBrokerSeries() {
+  return activeBrokerCandidates()
+    .map((item) => ({
+      broker: item.broker,
+      points: rebase(item.points),
+    }))
+    .filter((item) => item.points.length);
+}
+
 function longestSpotReference() {
   const candidates = activeBrokerCandidates();
   if (!candidates.length) return [];
+
+  const oldestBrokerStart = candidates
+    .map((item) => item.points[0].date)
+    .sort()[0];
 
   const longest = candidates.reduce((best, item) => {
     if (!best) return item;
     return item.points[0].date < best.points[0].date ? item : best;
   }, null);
 
-  return rebase(longest.points);
+  const clamped = longest.points.filter((point) => point.date >= oldestBrokerStart);
+  return rebase(clamped);
+}
+
+function sideKeys(side) {
+  return side === "long"
+    ? { index: "longIndex", spot: "spotLongIndex", swap: "longSwapJpy" }
+    : { index: "shortIndex", spot: "spotShortIndex", swap: "shortSwapJpy" };
+}
+
+function standardDeviation(values) {
+  if (values.length < 2) return 0;
+  const mean = values.reduce((sum, value) => sum + value, 0) / values.length;
+  const variance = values.reduce((sum, value) => sum + (value - mean) ** 2, 0) / values.length;
+  return Math.sqrt(variance);
+}
+
+function metricsFor(item, side) {
+  const points = item.points;
+  const keys = sideKeys(side);
+  if (!points.length) return null;
+
+  const first = points[0];
+  const last = points.at(-1);
+  const totalReturn = last[keys.index] - 100;
+  const spotReturn = last[keys.spot] - 100;
+  const swapContribution = totalReturn - spotReturn;
+  const holdingDays = Math.max(1, daysBetween(first.date, last.date));
+  const finalIndex = last[keys.index];
+
+  const annualizedReturn = finalIndex > 0
+    ? (Math.pow(finalIndex / 100, 365 / holdingDays) - 1) * 100
+    : null;
+  const annualizedSwap = swapContribution * (365 / holdingDays);
+
+  let peak = points[0][keys.index];
+  let maxDrawdown = 0;
+  const dailyReturns = [];
+
+  for (let i = 0; i < points.length; i += 1) {
+    const value = points[i][keys.index];
+    if (value > peak) peak = value;
+    if (peak > 0) {
+      const drawdown = ((value / peak) - 1) * 100;
+      if (drawdown < maxDrawdown) maxDrawdown = drawdown;
+    }
+
+    if (i > 0) {
+      const previous = points[i - 1][keys.index];
+      if (previous > 0 && Number.isFinite(value)) {
+        dailyReturns.push((value / previous) - 1);
+      }
+    }
+  }
+
+  const volatility = standardDeviation(dailyReturns) * Math.sqrt(365) * 100;
+
+  return {
+    broker: item.broker,
+    side,
+    totalReturn,
+    spotReturn,
+    swapContribution,
+    cumulativeSwap: last[keys.swap],
+    annualizedReturn,
+    annualizedSwap,
+    maxDrawdown,
+    volatility,
+    startDate: first.date,
+    endDate: last.date,
+    holdingDays,
+  };
 }
 
 function renderBrokerButtons() {
@@ -173,25 +300,156 @@ function renderBrokerButtons() {
   }
 }
 
-function renderRangeSummary(series, spotReference) {
+function renderRangeSummary(chartSeries, comparisonSeries, spotReference) {
   const comparison = $("comparisonRange");
   const spot = $("spotRange");
 
-  if (series.length) {
-    const start = series[0].points[0]?.date;
-    const end = series[0].points.at(-1)?.date;
-    comparison.textContent = `Brokers  ${formatDate(start)} → ${formatDate(end)}`;
+  if (chartSeries.length) {
+    const starts = chartSeries.map((item) => item.points[0]?.date).filter(Boolean).sort();
+    const ends = chartSeries.map((item) => item.points.at(-1)?.date).filter(Boolean).sort();
+    const chartStart = starts[0];
+    const chartEnd = ends.at(-1);
+    comparison.textContent = `Chart  ${formatDate(chartStart)} → ${formatDate(chartEnd)}`;
   } else {
-    comparison.textContent = "Brokers —";
+    comparison.textContent = "Chart —";
   }
 
-  if (spotReference.length) {
+  if (comparisonSeries.length) {
+    const start = comparisonSeries[0].points[0]?.date;
+    const end = comparisonSeries[0].points.at(-1)?.date;
+    spot.textContent = `Comparison  ${formatDate(start)} → ${formatDate(end)}`;
+  } else if (spotReference.length) {
     const start = spotReference[0]?.date;
     const end = spotReference.at(-1)?.date;
     spot.textContent = `Spot  ${formatDate(start)} → ${formatDate(end)}`;
   } else {
     spot.textContent = "";
   }
+}
+
+function defaultRankingDirection(metric) {
+  return RANKING_METRICS[metric]?.defaultDirection || "desc";
+}
+
+function rankingRows(series, side) {
+  return series
+    .map((item) => metricsFor(item, side))
+    .filter(Boolean)
+    .sort((a, b) => {
+      const key = state.rankingMetric;
+      const av = a[key];
+      const bv = b[key];
+      if (!Number.isFinite(av) && !Number.isFinite(bv)) return 0;
+      if (!Number.isFinite(av)) return 1;
+      if (!Number.isFinite(bv)) return -1;
+      return state.rankingDirection === "asc" ? av - bv : bv - av;
+    });
+}
+
+function renderRankingColumn(side, series) {
+  const metric = RANKING_METRICS[state.rankingMetric];
+  const rows = rankingRows(series, side);
+  const column = document.createElement("div");
+  column.className = "ranking-column";
+  column.innerHTML = `
+    <div class="ranking-column-header">
+      <strong>${side.toUpperCase()}</strong>
+      <span>${metric.label}</span>
+    </div>
+    <ol class="ranking-list"></ol>
+  `;
+
+  const list = column.querySelector(".ranking-list");
+  rows.forEach((row, index) => {
+    const item = document.createElement("li");
+    item.className = "ranking-row";
+    const value = row[state.rankingMetric];
+    item.innerHTML = `
+      <span class="rank-number">#${index + 1}</span>
+      <div class="ranking-broker">
+        <span class="series-dot" style="--series-color:${brokerColor(row.broker)}"></span>
+        <span>${brokerName(row.broker)}</span>
+      </div>
+      <span class="ranking-value ${valueClass(value)}">${metric.format(value)}</span>
+    `;
+    list.appendChild(item);
+  });
+
+  return column;
+}
+
+function renderRanking(series) {
+  const tabs = document.querySelectorAll("#rankingTabs button");
+  tabs.forEach((button) => {
+    button.classList.toggle("active", button.dataset.rankingMetric === state.rankingMetric);
+  });
+
+  const metric = RANKING_METRICS[state.rankingMetric];
+  $("rankingDirection").textContent = state.rankingDirection === "desc"
+    ? "High → Low"
+    : "Low → High";
+  $("rankingContext").textContent = `${state.pair} · ${state.side.toUpperCase()} · ${metric.label}`;
+
+  const content = $("rankingContent");
+  content.innerHTML = "";
+  content.classList.toggle("both", state.side === "both");
+
+  if (state.side === "both") {
+    content.appendChild(renderRankingColumn("long", series));
+    content.appendChild(renderRankingColumn("short", series));
+  } else {
+    content.appendChild(renderRankingColumn(state.side, series));
+  }
+}
+
+function sortMetrics(rows, key, direction) {
+  return rows.slice().sort((a, b) => {
+    if (key === "broker") {
+      const av = brokerName(a.broker);
+      const bv = brokerName(b.broker);
+      return direction === "asc"
+        ? av.localeCompare(bv, "ja")
+        : bv.localeCompare(av, "ja");
+    }
+
+    if (key === "since") {
+      const av = a.startDate || "";
+      const bv = b.startDate || "";
+      return direction === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
+    }
+
+    const av = a[key];
+    const bv = b[key];
+    if (!Number.isFinite(av) && !Number.isFinite(bv)) return 0;
+    if (!Number.isFinite(av)) return 1;
+    if (!Number.isFinite(bv)) return -1;
+    return direction === "asc" ? av - bv : bv - av;
+  });
+}
+
+function sortHeader(label, key) {
+  const active = state.tableSort.key === key;
+  const marker = active ? (state.tableSort.direction === "asc" ? "↑" : "↓") : "";
+  return `
+    <button class="sort-header-button ${active ? "active-sort" : ""}" data-table-sort="${key}">
+      ${label}<span class="sort-marker">${marker}</span>
+    </button>
+  `;
+}
+
+function bindTableSort() {
+  document.querySelectorAll("[data-table-sort]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.tableSort;
+      if (state.tableSort.key === key) {
+        state.tableSort.direction = state.tableSort.direction === "desc" ? "asc" : "desc";
+      } else {
+        state.tableSort.key = key;
+        state.tableSort.direction = key === "broker" || key === "since" ? "asc" : "desc";
+      }
+      render();
+    });
+  });
 }
 
 function renderPerformanceTable(series, spotReference) {
@@ -201,27 +459,42 @@ function renderPerformanceTable(series, spotReference) {
   body.innerHTML = "";
 
   if (state.side === "both") {
+    const rows = series.map((item) => {
+      const long = metricsFor(item, "long");
+      const short = metricsFor(item, "short");
+      return {
+        broker: item.broker,
+        longReturn: long.totalReturn,
+        shortReturn: short.totalReturn,
+        longSwap: long.cumulativeSwap,
+        shortSwap: short.cumulativeSwap,
+        since: long.startDate,
+        startDate: long.startDate,
+      };
+    });
+
+    const sorted = sortMetrics(rows, state.tableSort.key, state.tableSort.direction);
+
     head.innerHTML = `
       <tr>
-        <th>Broker</th>
-        <th>Long return</th>
-        <th>Short return</th>
-        <th>Long swap</th>
-        <th>Short swap</th>
-        <th>Since</th>
+        <th>${sortHeader("Broker", "broker")}</th>
+        <th>${sortHeader("Long return", "longReturn")}</th>
+        <th>${sortHeader("Short return", "shortReturn")}</th>
+        <th>${sortHeader("Long swap", "longSwap")}</th>
+        <th>${sortHeader("Short swap", "shortSwap")}</th>
+        <th>${sortHeader("Since", "since")}</th>
       </tr>
     `;
 
-    for (const item of series) {
-      const last = item.points.at(-1);
+    for (const rowData of sorted) {
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td><div class="broker-cell"><span class="series-dot" style="--series-color:${brokerColor(item.broker)}"></span>${brokerName(item.broker)}</div></td>
-        <td class="return-value ${valueClass(last.longIndex - 100)}">${formatPct(last.longIndex - 100)}</td>
-        <td class="return-value ${valueClass(last.shortIndex - 100)}">${formatPct(last.shortIndex - 100)}</td>
-        <td class="${valueClass(last.longSwapJpy)}">${formatJpy(last.longSwapJpy)}</td>
-        <td class="${valueClass(last.shortSwapJpy)}">${formatJpy(last.shortSwapJpy)}</td>
-        <td>${formatDate(item.points[0].date)}</td>
+        <td><div class="broker-cell"><span class="series-dot" style="--series-color:${brokerColor(rowData.broker)}"></span>${brokerName(rowData.broker)}</div></td>
+        <td class="return-value ${valueClass(rowData.longReturn)}">${formatPct(rowData.longReturn)}</td>
+        <td class="return-value ${valueClass(rowData.shortReturn)}">${formatPct(rowData.shortReturn)}</td>
+        <td class="${valueClass(rowData.longSwap)}">${formatJpy(rowData.longSwap)}</td>
+        <td class="${valueClass(rowData.shortSwap)}">${formatJpy(rowData.shortSwap)}</td>
+        <td>${formatDate(rowData.startDate)}</td>
       `;
       body.appendChild(row);
     }
@@ -240,44 +513,53 @@ function renderPerformanceTable(series, spotReference) {
       `;
       body.appendChild(row);
     }
+
+    bindTableSort();
     return;
   }
 
-  const sideKey = state.side === "long"
-    ? { index: "longIndex", spot: "spotLongIndex", swap: "longSwapJpy" }
-    : { index: "shortIndex", spot: "spotShortIndex", swap: "shortSwapJpy" };
+  const metrics = series
+    .map((item) => metricsFor(item, state.side))
+    .filter(Boolean);
+  const sortKeyMap = {
+    total: "totalReturn",
+    spot: "spotReturn",
+    swapContribution: "swapContribution",
+    cumulativeSwap: "cumulativeSwap",
+    since: "since",
+    broker: "broker",
+  };
+  const mappedSortKey = sortKeyMap[state.tableSort.key] || state.tableSort.key;
+  const sorted = sortMetrics(metrics, mappedSortKey, state.tableSort.direction);
 
   head.innerHTML = `
     <tr>
-      <th>Broker</th>
-      <th>Total return</th>
-      <th>Spot return</th>
-      <th>Swap contribution</th>
-      <th>Cumulative swap</th>
-      <th>Since</th>
+      <th>${sortHeader("Broker", "broker")}</th>
+      <th>${sortHeader("Total return", "total")}</th>
+      <th>${sortHeader("Spot return", "spot")}</th>
+      <th>${sortHeader("Swap contribution", "swapContribution")}</th>
+      <th>${sortHeader("Cumulative swap", "cumulativeSwap")}</th>
+      <th>${sortHeader("Since", "since")}</th>
     </tr>
   `;
 
-  for (const item of series) {
-    const last = item.points.at(-1);
-    const total = last[sideKey.index] - 100;
-    const spotReturn = last[sideKey.spot] - 100;
-    const swapContribution = total - spotReturn;
+  for (const metric of sorted) {
     const row = document.createElement("tr");
     row.innerHTML = `
-      <td><div class="broker-cell"><span class="series-dot" style="--series-color:${brokerColor(item.broker)}"></span>${brokerName(item.broker)}</div></td>
-      <td class="return-value ${valueClass(total)}">${formatPct(total)}</td>
-      <td class="${valueClass(spotReturn)}">${formatPct(spotReturn)}</td>
-      <td class="${valueClass(swapContribution)}">${formatPct(swapContribution)}</td>
-      <td class="${valueClass(last[sideKey.swap])}">${formatJpy(last[sideKey.swap])}</td>
-      <td>${formatDate(item.points[0].date)}</td>
+      <td><div class="broker-cell"><span class="series-dot" style="--series-color:${brokerColor(metric.broker)}"></span>${brokerName(metric.broker)}</div></td>
+      <td class="return-value ${valueClass(metric.totalReturn)}">${formatPct(metric.totalReturn)}</td>
+      <td class="${valueClass(metric.spotReturn)}">${formatPct(metric.spotReturn)}</td>
+      <td class="${valueClass(metric.swapContribution)}">${formatPct(metric.swapContribution)}</td>
+      <td class="${valueClass(metric.cumulativeSwap)}">${formatJpy(metric.cumulativeSwap)}</td>
+      <td>${formatDate(metric.startDate)}</td>
     `;
     body.appendChild(row);
   }
 
   if (spotReference.length) {
     const last = spotReference.at(-1);
-    const spotReturn = last[sideKey.spot] - 100;
+    const spotKey = state.side === "long" ? "spotLongIndex" : "spotShortIndex";
+    const spotReturn = last[spotKey] - 100;
     const row = document.createElement("tr");
     row.className = "benchmark-row";
     row.innerHTML = `
@@ -290,6 +572,8 @@ function renderPerformanceTable(series, spotReference) {
     `;
     body.appendChild(row);
   }
+
+  bindTableSort();
 }
 
 function renderChart(series, spotReference) {
@@ -425,16 +709,24 @@ function renderPeriodState() {
   });
 }
 
+function resetSortsForSide() {
+  state.tableSort = state.side === "both"
+    ? { key: "longReturn", direction: "desc" }
+    : { key: "total", direction: "desc" };
+}
+
 function render() {
   renderBrokerButtons();
   renderPeriodState();
 
-  const series = activeBrokerSeries();
+  const comparisonSeries = comparisonBrokerSeries();
+  const chartSeries = chartBrokerSeries();
   const spotReference = longestSpotReference();
 
-  renderPerformanceTable(series, spotReference);
-  renderChart(series, spotReference);
-  renderRangeSummary(series, spotReference);
+  renderRanking(comparisonSeries);
+  renderPerformanceTable(comparisonSeries, spotReference);
+  renderChart(chartSeries, spotReference);
+  renderRangeSummary(chartSeries, comparisonSeries, spotReference);
 
   const rangeLabel = state.customStart
     ? `From ${formatDate(state.customStart)}`
@@ -485,12 +777,14 @@ function setupControls() {
     const available = Object.keys(state.data.series[state.pair] || {});
     state.brokers = new Set(available);
     updateDateBounds();
+    resetSortsForSide();
     render();
   });
 
   document.querySelectorAll("#sideButtons button").forEach((button) => {
     button.addEventListener("click", () => {
       state.side = button.dataset.side;
+      resetSortsForSide();
       render();
     });
   });
@@ -502,6 +796,19 @@ function setupControls() {
       $("customStartDate").value = "";
       render();
     });
+  });
+
+  document.querySelectorAll("#rankingTabs button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.rankingMetric = button.dataset.rankingMetric;
+      state.rankingDirection = defaultRankingDirection(state.rankingMetric);
+      render();
+    });
+  });
+
+  $("rankingDirection").addEventListener("click", () => {
+    state.rankingDirection = state.rankingDirection === "desc" ? "asc" : "desc";
+    render();
   });
 
   $("customStartDate").addEventListener("change", (event) => {
@@ -521,6 +828,8 @@ function setupControls() {
   const initialBrokers = Object.keys(state.data.series[state.pair] || {});
   state.brokers = new Set(initialBrokers);
   updateDateBounds();
+  state.rankingDirection = defaultRankingDirection(state.rankingMetric);
+  resetSortsForSide();
 }
 
 async function boot() {

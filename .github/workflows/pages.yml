@@ -29,6 +29,9 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Check dashboard JavaScript
+        run: node --check site/app.js
+
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
 

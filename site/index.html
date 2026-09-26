@@ -91,6 +91,30 @@
         <div id="chart"></div>
       </section>
 
+      <section class="ranking-panel">
+        <header class="panel-header ranking-header">
+          <div>
+            <div class="panel-kicker">BROKER RANKING</div>
+            <h2>Metric ranking</h2>
+          </div>
+          <div class="ranking-context" id="rankingContext">—</div>
+        </header>
+
+        <div class="ranking-toolbar">
+          <div class="ranking-tabs" id="rankingTabs">
+            <button data-ranking-metric="totalReturn" class="active">Total Return</button>
+            <button data-ranking-metric="annualizedReturn">Annualized Return</button>
+            <button data-ranking-metric="swapContribution">Swap Contribution</button>
+            <button data-ranking-metric="annualizedSwap">Annualized Swap</button>
+            <button data-ranking-metric="maxDrawdown">Max Drawdown</button>
+            <button data-ranking-metric="volatility">Volatility</button>
+          </div>
+          <button id="rankingDirection" class="sort-direction-button" type="button">High → Low</button>
+        </div>
+
+        <div id="rankingContent" class="ranking-content"></div>
+      </section>
+
       <section class="performance-panel">
         <header class="panel-header table-header">
           <div>
@@ -121,7 +145,7 @@
           </div>
           <div>
             <strong>Comparison window</strong>
-            <p>業者同士は選択中の全業者が揃う共通開始日から比較します。Spot onlyは選択中で最も長い履歴を持つ業者の期間を利用します。</p>
+            <p>Return ComparisonとRankingは選択中の全業者が揃う共通開始日から計算します。MAXグラフは各業者の取得可能な履歴を表示し、Spot onlyは最も古い業者の開始日より前には表示しません。</p>
           </div>
         </div>
       </details>

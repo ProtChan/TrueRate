@@ -28,6 +28,24 @@ jobs:
           r=requests.get(u,headers=h,timeout=30)
           print("PAGE",r.status_code,r.url,len(r.text))
           soup=BeautifulSoup(r.text,"html.parser")
+          hist=soup.find("swap-history")
+          print("SWAP_HISTORY_ATTRS",dict(hist.attrs) if hist else None)
+          if hist:
+              instruments=hist.get("instruments") or "[]"
+              print("INSTRUMENTS",instruments)
+              print("SPAN",hist.get("span-start"),hist.get("span-end"),hist.get("type"))
+          for ym in ("201904","202609"):
+              for pair in ("usdjpy","zarjpy","audcad"):
+                  url=f"https://www.oanda.jp/service/swappoint/swap_ny4_{pair}_{ym}.json"
+                  rr=requests.get(url,headers=h,timeout=30)
+                  print("JSON",ym,pair,rr.status_code,len(rr.content),rr.headers.get("content-type"))
+                  if rr.ok:
+                      try:
+                          obj=rr.json()
+                          print("JSON_TYPE",type(obj).__name__)
+                          print("JSON_HEAD",str(obj)[:1800])
+                      except Exception as e:
+                          print("JSON_ERR",e,rr.text[:1000])
           for form in soup.find_all("form"):
               print("FORM",form.get("action"),form.get("method"),form.get("id"),form.get("name"))
               for tag in form.find_all(["select","input","option","button"])[:300]:

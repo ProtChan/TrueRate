@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import time
 from datetime import date
 
 import requests
@@ -30,16 +31,38 @@ def fetch_usd_cross(
         "User-Agent",
         "TrueRate/0.1 (+https://github.com/ProtChan/TrueRate)",
     )
-    response = client.get(
-        API_URL,
-        params={
-            "base": "USD",
-            "quotes": currency,
-            "from": start.isoformat(),
-            "to": end.isoformat(),
-        },
-        timeout=timeout,
-    )
+
+    # Large first-time backfills touch many currencies in sequence. Pace those
+    # calls proactively and honor 429 Retry-After responses so one provider
+    # throttle cannot abort an otherwise valid broker refresh.
+    if (end - start).days > 90:
+        time.sleep(0.5)
+
+    response = None
+    for attempt in range(6):
+        response = client.get(
+            API_URL,
+            params={
+                "base": "USD",
+                "quotes": currency,
+                "from": start.isoformat(),
+                "to": end.isoformat(),
+            },
+            timeout=timeout,
+        )
+        if response.status_code != 429:
+            break
+
+        retry_after = response.headers.get("Retry-After")
+        try:
+            wait_seconds = float(retry_after) if retry_after else 0.0
+        except ValueError:
+            wait_seconds = 0.0
+        if wait_seconds <= 0:
+            wait_seconds = min(2 ** attempt, 16)
+        time.sleep(wait_seconds)
+
+    assert response is not None
 
     # Some broker currencies may not exist in the public reference-rate
     # provider. A missing reference rate should not break swap collection.

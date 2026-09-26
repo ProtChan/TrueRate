@@ -2,11 +2,11 @@
 
 TrueRate is a static FX total-return dashboard that separates market movement from broker swap cashflow.
 
-The first supported broker is **GMO外貨**.
+Supported brokers: **GMO外貨** and **GMOクリック証券（FXネオ）**.
 
 ## Core rule: swap is effective on the following JST day
 
-GMO外貨 publishes a swap calendar using a Japanese "取引日" label. TrueRate preserves that original date as `trade_date`, but the return series uses:
+Each broker publishes a Japanese swap calendar date. GMO外貨 uses a 「取引日」 label and GMOクリック証券 states that swap is generated/reflected at the New York close on the displayed date. TrueRate preserves that original date as `trade_date`, but the return series uses:
 
 ~~~text
 effective_date = trade_date + 1 calendar day
@@ -37,7 +37,7 @@ The browser rebases every broker to 100 at the first day of the selected 1M / 3M
 
 ## Data sources
 
-- Broker swap: GMO外貨 official swap calendar
+- Broker swap: GMO外貨 official swap calendar\n- Broker swap: GMOクリック証券 FXネオ official swap calendar
 - Common FX reference rate: Frankfurter v2 blended official-source rates
 - Broker-specific Bid/Ask and spread are intentionally excluded from the spot component
 
@@ -52,7 +52,7 @@ scripts/
   update_data.py         incremental collection/build pipeline
 
 src/truerate/
-  brokers/gmo_gaika.py   GMO外貨 parser/collector
+  brokers/gmo_gaika.py   GMO外貨 parser/collector\n  brokers/gmo_click.py   GMOクリック証券 parser/collector
   rates/frankfurter.py   common daily FX reference rates
   series.py              normalized site-data builder
   models.py              normalized swap record
@@ -72,9 +72,9 @@ site/
 
 The Pages workflow runs every day at **09:15 JST**. This is intentionally after GMO外貨's stated NY-close credit window.
 
-On a new repository/data set it backfills from `2022-01` by default. Afterwards it refreshes the current and previous GMO calendar month plus the latest reference-rate window, merges them into the existing history, validates the current parser result, generates the site payload, commits changed data, and deploys GitHub Pages.
+On a new data set GMO外貨 backfills from `2022-01` by default, while GMOクリック証券 backfills from `2024-01` by default. Afterwards it refreshes the current and previous GMO calendar month plus the latest reference-rate window, merges them into the existing history, validates the current parser result, generates the site payload, commits changed data, and deploys GitHub Pages.
 
-The historical start can be changed with `TRUERATE_START_MONTH=YYYY-MM`.
+The historical starts can be changed with `TRUERATE_START_MONTH=YYYY-MM` and `TRUERATE_GMO_CLICK_START_MONTH=YYYY-MM`.
 
 ## Run locally
 

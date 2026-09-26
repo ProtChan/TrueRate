@@ -13,12 +13,14 @@ ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
-from truerate.brokers.gmo_gaika import collect_month, iter_months
+from truerate.brokers.gmo_click import collect_month as collect_gmo_click_month
+from truerate.brokers.gmo_gaika import collect_month as collect_gmo_gaika_month, iter_months
 from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
 JST = ZoneInfo("Asia/Tokyo")
-SWAP_PATH = ROOT / "data" / "swaps" / "gmo_gaika.csv"
+GMO_GAIKA_SWAP_PATH = ROOT / "data" / "swaps" / "gmo_gaika.csv"
+GMO_CLICK_SWAP_PATH = ROOT / "data" / "swaps" / "gmo_click.csv"
 RATE_PATH = ROOT / "data" / "rates" / "usd_reference.csv"
 SITE_DATA_PATH = ROOT / "site" / "data" / "site-data.json"
 
@@ -79,8 +81,6 @@ def merge_swaps(
         current = merged.get(key)
         incoming_complete = row["long_swap_jpy"] != "" and row["short_swap_jpy"] != ""
 
-        # Never destroy a confirmed historical cashflow because a later scrape
-        # temporarily returned an empty/scheduled cell.
         if (
             current
             and current.get("status") == "confirmed"
@@ -105,50 +105,95 @@ def merge_rates(
     return sorted(merged.values(), key=lambda row: (row["date"], row["currency"]))
 
 
-def main() -> int:
-    parser = argparse.ArgumentParser(description="Refresh TrueRate data")
-    parser.add_argument(
-        "--full",
-        action="store_true",
-        help="Re-fetch every GMO month and every reference-rate currency.",
-    )
-    parser.add_argument(
-        "--start",
-        type=parse_month,
-        default=parse_month(os.environ.get("TRUERATE_START_MONTH", "2022-01")),
-        help="Historical backfill start month (default: 2022-01).",
-    )
-    args = parser.parse_args()
-
-    now = datetime.now(tz=JST)
-    today = now.date()
-    existing_swaps = load_csv(SWAP_PATH)
-
-    if args.full or not existing_swaps:
-        month_start = args.start
-    else:
-        month_start = previous_month(today)
-
-    incoming_swaps: list[dict[str, str]] = []
-    current_month_pair_count = 0
+def refresh_gmo_gaika(
+    today: date,
+    *,
+    full: bool,
+    start: date,
+) -> list[dict[str, str]]:
+    existing = load_csv(GMO_GAIKA_SWAP_PATH)
+    month_start = start if full or not existing else previous_month(today)
+    incoming: list[dict[str, str]] = []
+    current_pair_count = 0
 
     for year, month in iter_months(month_start, today):
         print(f"Collecting GMO Gaika {year:04d}-{month:02d}...")
-        records = collect_month(year, month, today_jst=today)
+        records = collect_gmo_gaika_month(year, month, today_jst=today)
         pair_count = len({record.pair for record in records})
         print(f"  {len(records)} rows / {pair_count} pairs")
         if year == today.year and month == today.month:
-            current_month_pair_count = pair_count
-        incoming_swaps.extend(record.to_csv_row() for record in records)
+            current_pair_count = pair_count
+        incoming.extend(record.to_csv_row() for record in records)
 
-    if current_month_pair_count < 20:
+    if current_pair_count < 20:
         raise RuntimeError(
             "GMO Gaika current-month parser returned fewer than 20 pairs; "
             "refusing to publish possibly broken scrape data."
         )
 
-    swaps = merge_swaps(existing_swaps, incoming_swaps)
-    write_csv(SWAP_PATH, swaps, SWAP_FIELDS)
+    merged = merge_swaps(existing, incoming)
+    write_csv(GMO_GAIKA_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
+
+
+def refresh_gmo_click(
+    today: date,
+    *,
+    full: bool,
+    start: date,
+) -> list[dict[str, str]]:
+    existing = load_csv(GMO_CLICK_SWAP_PATH)
+    month_start = start if full or not existing else previous_month(today)
+    incoming: list[dict[str, str]] = []
+    current_pair_count = 0
+
+    for year, month in iter_months(month_start, today):
+        print(f"Collecting GMO Click {year:04d}-{month:02d}...")
+        records = collect_gmo_click_month(year, month, today_jst=today)
+        pair_count = len({record.pair for record in records})
+        print(f"  {len(records)} rows / {pair_count} pairs")
+        if year == today.year and month == today.month:
+            current_pair_count = pair_count
+        incoming.extend(record.to_csv_row() for record in records)
+
+    if current_pair_count < 20:
+        raise RuntimeError(
+            "GMO Click current-month parser returned fewer than 20 standard pairs; "
+            "refusing to publish possibly broken scrape data."
+        )
+
+    merged = merge_swaps(existing, incoming)
+    write_csv(GMO_CLICK_SWAP_PATH, merged, SWAP_FIELDS)
+    return merged
+
+
+def main() -> int:
+    parser = argparse.ArgumentParser(description="Refresh TrueRate data")
+    parser.add_argument(
+        "--full",
+        action="store_true",
+        help="Re-fetch configured history for all brokers and reference rates.",
+    )
+    parser.add_argument(
+        "--start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_START_MONTH", "2022-01")),
+        help="GMO Gaika historical backfill start month (default: 2022-01).",
+    )
+    parser.add_argument(
+        "--gmo-click-start",
+        type=parse_month,
+        default=parse_month(os.environ.get("TRUERATE_GMO_CLICK_START_MONTH", "2024-01")),
+        help="GMO Click historical backfill start month (default: 2024-01).",
+    )
+    args = parser.parse_args()
+
+    now = datetime.now(tz=JST)
+    today = now.date()
+
+    gaika_swaps = refresh_gmo_gaika(today, full=args.full, start=args.start)
+    click_swaps = refresh_gmo_click(today, full=args.full, start=args.gmo_click_start)
+    swaps = gaika_swaps + click_swaps
 
     confirmed_swaps = [
         row
@@ -158,7 +203,7 @@ def main() -> int:
         and row.get("short_swap_jpy", "") != ""
     ]
     if not confirmed_swaps:
-        raise RuntimeError("No confirmed GMO Gaika swap rows are available.")
+        raise RuntimeError("No confirmed broker swap rows are available.")
 
     first_trade = min(date.fromisoformat(row["trade_date"]) for row in confirmed_swaps)
     rate_history_start = first_trade - timedelta(days=10)

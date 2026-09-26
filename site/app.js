@@ -114,34 +114,28 @@ function renderMetrics(series) {
   container.innerHTML = "";
   if (!series.length) return;
 
-  const primary = series[0];
-  const last = primary.points[primary.points.length - 1];
-  const metrics = [
-    {
-      label: `${brokerName(primary.broker)} Long`,
-      value: last.longIndex - 100,
-      display: formatPct(last.longIndex - 100),
-      sub: "為替損益 + 買いスワップ",
-    },
-    {
-      label: `${brokerName(primary.broker)} Short`,
-      value: last.shortIndex - 100,
-      display: formatPct(last.shortIndex - 100),
-      sub: "為替損益 + 売りスワップ",
-    },
-    {
-      label: "Long swap",
-      value: last.longSwapJpy,
-      display: formatJpy(last.longSwapJpy),
-      sub: `${state.data.metadata.unit.toLocaleString("ja-JP")}通貨・選択期間累計`,
-    },
-    {
-      label: "Short swap",
-      value: last.shortSwapJpy,
-      display: formatJpy(last.shortSwapJpy),
-      sub: `${state.data.metadata.unit.toLocaleString("ja-JP")}通貨・選択期間累計`,
-    },
-  ];
+  const metrics = [];
+  for (const item of series) {
+    const last = item.points[item.points.length - 1];
+    const name = brokerName(item.broker);
+
+    if (state.side === "long" || state.side === "both") {
+      metrics.push({
+        label: `${name} Long`,
+        value: last.longIndex - 100,
+        display: formatPct(last.longIndex - 100),
+        sub: `Swap ${formatJpy(last.longSwapJpy)} · 為替 + 買いスワップ`,
+      });
+    }
+    if (state.side === "short" || state.side === "both") {
+      metrics.push({
+        label: `${name} Short`,
+        value: last.shortIndex - 100,
+        display: formatPct(last.shortIndex - 100),
+        sub: `Swap ${formatJpy(last.shortSwapJpy)} · 為替 + 売りスワップ`,
+      });
+    }
+  }
 
   for (const metric of metrics) {
     const card = document.createElement("article");

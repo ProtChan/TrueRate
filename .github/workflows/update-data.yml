@@ -1,8 +1,17 @@
 name: Update TrueRate data
 
 on:
+  push:
+    branches:
+      - main
+    paths:
+      - "src/**"
+      - "scripts/**"
+      - "tests/**"
+      - "requirements.txt"
+      - ".github/workflows/update-data.yml"
   schedule:
-    # 09:15 JST. GMO Gaika reflects swap after the NY close around 06:00/07:00 JST.
+    # 09:15 JST. Broker calendars reflect NY-close swaps before this run.
     - cron: "15 0 * * *"
   workflow_dispatch:
 
@@ -16,6 +25,7 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
 
     steps:
       - name: Checkout
@@ -37,7 +47,7 @@ jobs:
           PYTHONPATH: src
         run: python -m unittest discover -s tests -v
 
-      - name: Refresh GMO swap and FX reference data
+      - name: Refresh broker swap and FX reference data
         run: python scripts/update_data.py
 
       - name: Commit refreshed data
@@ -49,5 +59,6 @@ jobs:
             echo "No data changes"
           else
             git commit -m "data: refresh daily rates and swaps"
+            git pull --rebase origin main
             git push
           fi

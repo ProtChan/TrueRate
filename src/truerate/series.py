@@ -1,14 +1,18 @@
 from __future__ import annotations
 
 from collections import defaultdict
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from typing import Iterable
 
 BROKERS = {
+    "gmo_click": {
+        "id": "gmo_click",
+        "name": "GMOクリック証券",
+    },
     "gmo_gaika": {
         "id": "gmo_gaika",
         "name": "GMO外貨",
-    }
+    },
 }
 
 
@@ -71,13 +75,7 @@ def build_site_payload(
     today: date,
     unit: int = 10_000,
 ) -> dict:
-    """Build broker/pair daily primitives for browser-side return rebasing.
-
-    We intentionally publish spot, JPY conversion rates and cumulative swap
-    cashflows instead of only a precomputed total-return line. The browser can
-    then rebase every broker to the same selected start date, which makes
-    cross-broker comparisons fair even when their historical coverage differs.
-    """
+    """Build broker/pair daily primitives for browser-side return rebasing."""
     confirmed = [
         row
         for row in swap_rows
@@ -91,7 +89,7 @@ def build_site_payload(
                 "generated_at": generated_at,
                 "unit": unit,
                 "rate_provider": "Frankfurter blended official-source reference rates",
-                "swap_effective_rule": "GMO calendar trade_date + 1 calendar day (JST)",
+                "swap_effective_rule": "broker calendar display date + 1 calendar day (JST)",
             },
             "brokers": list(BROKERS.values()),
             "pairs": [],
@@ -177,10 +175,10 @@ def build_site_payload(
             "generated_at": generated_at,
             "unit": unit,
             "rate_provider": "Frankfurter blended official-source reference rates",
-            "swap_effective_rule": "GMO calendar trade_date + 1 calendar day (JST)",
+            "swap_effective_rule": "broker calendar display date + 1 calendar day (JST)",
             "calculation": (
                 "FX PnL is fixed base-unit PnL converted from quote currency to JPY "
-                "at each day's reference rate; swap cashflow is added separately."
+                "at each day's reference rate; broker swap cashflow is added separately."
             ),
         },
         "brokers": [BROKERS[key] for key in sorted(BROKERS)],

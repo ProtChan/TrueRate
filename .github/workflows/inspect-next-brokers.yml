@@ -32,6 +32,27 @@ jobs:
             "jfx":"https://www.jfx.co.jp/trading_rule/swap/",
           }
 
+          print("\n### EXTRA SOURCES")
+          extras=[
+              ("sbi_js","https://www.sbifxt.co.jp/market/js/swap_calendar.js?202310310000"),
+              ("hirose_csv","https://hirose-fx.co.jp/swap/lionfx_swap.csv"),
+              ("jfx_csv","https://info.jfx.co.jp/jfxapl/updateapl/matrix_swap.csv"),
+          ]
+          for ename,eu in extras:
+              er=requests.get(eu,headers=H,timeout=30)
+              print("\nEXTRA",ename,er.status_code,er.url,len(er.content),er.headers.get("content-type"))
+              if ename=="sbi_js":
+                  print(er.text[:30000])
+              else:
+                  for enc in ("cp932","shift_jis","utf-8-sig","utf-8"):
+                      try:
+                          txt=er.content.decode(enc)
+                          print("ENC",enc)
+                          print(txt[:15000])
+                          break
+                      except Exception:
+                          pass
+
           for name,u in urls.items():
               print("\n\n###",name,u)
               r=requests.get(u,headers=H,timeout=30)

@@ -1,5 +1,6 @@
 const state = {
   data: null,
+  view: "dashboard",
   pair: null,
   side: "long",
   period: "1Y",
@@ -21,36 +22,12 @@ const BROKER_COLORS = {
 const SPOT_COLOR = "#94a3b8";
 
 const RANKING_METRICS = {
-  totalReturn: {
-    label: "Total Return",
-    defaultDirection: "desc",
-    format: formatPct,
-  },
-  annualizedReturn: {
-    label: "Annualized Return",
-    defaultDirection: "desc",
-    format: formatPct,
-  },
-  swapContribution: {
-    label: "Swap Contribution",
-    defaultDirection: "desc",
-    format: formatPct,
-  },
-  annualizedSwap: {
-    label: "Annualized Swap",
-    defaultDirection: "desc",
-    format: formatPct,
-  },
-  maxDrawdown: {
-    label: "Max Drawdown",
-    defaultDirection: "desc",
-    format: formatPct,
-  },
-  volatility: {
-    label: "Volatility",
-    defaultDirection: "asc",
-    format: formatPct,
-  },
+  totalReturn: { label: "Total Return", best: "max", defaultDirection: "desc", format: formatPct },
+  annualizedReturn: { label: "Annualized Return", best: "max", defaultDirection: "desc", format: formatPct },
+  swapContribution: { label: "Swap Contribution", best: "max", defaultDirection: "desc", format: formatPct },
+  annualizedSwap: { label: "Annualized Swap", best: "max", defaultDirection: "desc", format: formatPct },
+  maxDrawdown: { label: "Max Drawdown", best: "max", defaultDirection: "desc", format: formatPct },
+  volatility: { label: "Volatility", best: "min", defaultDirection: "asc", format: formatPct },
 };
 
 const $ = (id) => document.getElementById(id);
@@ -90,9 +67,12 @@ function formatDate(dateText) {
 
 function daysBetween(start, end) {
   if (!start || !end) return 0;
-  const startMs = Date.parse(`${start}T00:00:00Z`);
-  const endMs = Date.parse(`${end}T00:00:00Z`);
-  return Math.max(0, Math.round((endMs - startMs) / 86400000));
+  return Math.max(
+    0,
+    Math.round(
+      (Date.parse(`${end}T00:00:00Z`) - Date.parse(`${start}T00:00:00Z`)) / 86400000
+    )
+  );
 }
 
 function cutoffFor(points) {
@@ -115,11 +95,9 @@ function periodPoints(rawPoints) {
   return cutoff ? rawPoints.filter((point) => point.date >= cutoff) : rawPoints.slice();
 }
 
-function rebase(points, commonStartDate = null) {
+function rebase(points, startDate = null) {
   if (!points?.length) return [];
-  const aligned = commonStartDate
-    ? points.filter((point) => point.date >= commonStartDate)
-    : points;
+  const aligned = startDate ? points.filter((point) => point.date >= startDate) : points;
   if (!aligned.length) return [];
 
   const first = aligned[0];
@@ -148,62 +126,6 @@ function rebase(points, commonStartDate = null) {
   });
 }
 
-function activeBrokerCandidates() {
-  const pairSeries = state.data.series[state.pair] || {};
-  const candidates = [];
-
-  for (const broker of state.brokers) {
-    const item = pairSeries[broker];
-    if (!item) continue;
-    const points = periodPoints(item.points);
-    if (points.length) candidates.push({ broker, points });
-  }
-  return candidates;
-}
-
-function comparisonBrokerSeries() {
-  const candidates = activeBrokerCandidates();
-  if (!candidates.length) return [];
-
-  const commonStartDate = candidates
-    .map((item) => item.points[0].date)
-    .sort()
-    .at(-1);
-
-  return candidates
-    .map((item) => ({
-      broker: item.broker,
-      points: rebase(item.points, commonStartDate),
-    }))
-    .filter((item) => item.points.length);
-}
-
-function chartBrokerSeries() {
-  return activeBrokerCandidates()
-    .map((item) => ({
-      broker: item.broker,
-      points: rebase(item.points),
-    }))
-    .filter((item) => item.points.length);
-}
-
-function longestSpotReference() {
-  const candidates = activeBrokerCandidates();
-  if (!candidates.length) return [];
-
-  const oldestBrokerStart = candidates
-    .map((item) => item.points[0].date)
-    .sort()[0];
-
-  const longest = candidates.reduce((best, item) => {
-    if (!best) return item;
-    return item.points[0].date < best.points[0].date ? item : best;
-  }, null);
-
-  const clamped = longest.points.filter((point) => point.date >= oldestBrokerStart);
-  return rebase(clamped);
-}
-
 function sideKeys(side) {
   return side === "long"
     ? { index: "longIndex", spot: "spotLongIndex", swap: "longSwapJpy" }
@@ -218,10 +140,9 @@ function standardDeviation(values) {
 }
 
 function metricsFor(item, side) {
+  if (!item?.points?.length) return null;
   const points = item.points;
   const keys = sideKeys(side);
-  if (!points.length) return null;
-
   const first = points[0];
   const last = points.at(-1);
   const totalReturn = last[keys.index] - 100;
@@ -246,7 +167,6 @@ function metricsFor(item, side) {
       const drawdown = ((value / peak) - 1) * 100;
       if (drawdown < maxDrawdown) maxDrawdown = drawdown;
     }
-
     if (i > 0) {
       const previous = points[i - 1][keys.index];
       if (previous > 0 && Number.isFinite(value)) {
@@ -274,6 +194,45 @@ function metricsFor(item, side) {
   };
 }
 
+function activeBrokerCandidates() {
+  const pairSeries = state.data.series[state.pair] || {};
+  const candidates = [];
+
+  for (const broker of state.brokers) {
+    const item = pairSeries[broker];
+    if (!item) continue;
+    const points = periodPoints(item.points);
+    if (points.length) candidates.push({ broker, points });
+  }
+  return candidates;
+}
+
+function comparisonBrokerSeries() {
+  const candidates = activeBrokerCandidates();
+  if (!candidates.length) return [];
+  const commonStart = candidates.map((item) => item.points[0].date).sort().at(-1);
+  return candidates
+    .map((item) => ({ broker: item.broker, points: rebase(item.points, commonStart) }))
+    .filter((item) => item.points.length);
+}
+
+function chartBrokerSeries() {
+  return activeBrokerCandidates()
+    .map((item) => ({ broker: item.broker, points: rebase(item.points) }))
+    .filter((item) => item.points.length);
+}
+
+function longestSpotReference() {
+  const candidates = activeBrokerCandidates();
+  if (!candidates.length) return [];
+  const oldestBrokerStart = candidates.map((item) => item.points[0].date).sort()[0];
+  const longest = candidates.reduce(
+    (best, item) => (!best || item.points[0].date < best.points[0].date ? item : best),
+    null
+  );
+  return rebase(longest.points.filter((point) => point.date >= oldestBrokerStart));
+}
+
 function renderBrokerButtons() {
   const pairSeries = state.data.series[state.pair] || {};
   const container = $("brokerButtons");
@@ -281,143 +240,52 @@ function renderBrokerButtons() {
 
   for (const broker of state.data.brokers) {
     if (!pairSeries[broker.id]) continue;
-
     const button = document.createElement("button");
     button.textContent = broker.name;
     button.style.setProperty("--broker-color", brokerColor(broker.id));
     button.className = state.brokers.has(broker.id) ? "active" : "";
-
     button.addEventListener("click", () => {
       if (state.brokers.has(broker.id) && state.brokers.size > 1) {
         state.brokers.delete(broker.id);
       } else {
         state.brokers.add(broker.id);
       }
-      render();
+      renderDashboard();
     });
-
     container.appendChild(button);
   }
 }
 
-function renderRangeSummary(chartSeries, comparisonSeries, spotReference) {
-  const comparison = $("comparisonRange");
-  const spot = $("spotRange");
-
+function renderRangeSummary(chartSeries, comparisonSeries) {
   if (chartSeries.length) {
-    const starts = chartSeries.map((item) => item.points[0]?.date).filter(Boolean).sort();
-    const ends = chartSeries.map((item) => item.points.at(-1)?.date).filter(Boolean).sort();
-    const chartStart = starts[0];
-    const chartEnd = ends.at(-1);
-    comparison.textContent = `Chart  ${formatDate(chartStart)} → ${formatDate(chartEnd)}`;
+    const starts = chartSeries.map((item) => item.points[0].date).sort();
+    const ends = chartSeries.map((item) => item.points.at(-1).date).sort();
+    $("comparisonRange").textContent =
+      `Chart  ${formatDate(starts[0])} → ${formatDate(ends.at(-1))}`;
   } else {
-    comparison.textContent = "Chart —";
+    $("comparisonRange").textContent = "Chart —";
   }
 
   if (comparisonSeries.length) {
-    const start = comparisonSeries[0].points[0]?.date;
-    const end = comparisonSeries[0].points.at(-1)?.date;
-    spot.textContent = `Comparison  ${formatDate(start)} → ${formatDate(end)}`;
-  } else if (spotReference.length) {
-    const start = spotReference[0]?.date;
-    const end = spotReference.at(-1)?.date;
-    spot.textContent = `Spot  ${formatDate(start)} → ${formatDate(end)}`;
+    $("spotRange").textContent =
+      `Comparison  ${formatDate(comparisonSeries[0].points[0].date)} → ${formatDate(comparisonSeries[0].points.at(-1).date)}`;
   } else {
-    spot.textContent = "";
-  }
-}
-
-function defaultRankingDirection(metric) {
-  return RANKING_METRICS[metric]?.defaultDirection || "desc";
-}
-
-function rankingRows(series, side) {
-  return series
-    .map((item) => metricsFor(item, side))
-    .filter(Boolean)
-    .sort((a, b) => {
-      const key = state.rankingMetric;
-      const av = a[key];
-      const bv = b[key];
-      if (!Number.isFinite(av) && !Number.isFinite(bv)) return 0;
-      if (!Number.isFinite(av)) return 1;
-      if (!Number.isFinite(bv)) return -1;
-      return state.rankingDirection === "asc" ? av - bv : bv - av;
-    });
-}
-
-function renderRankingColumn(side, series) {
-  const metric = RANKING_METRICS[state.rankingMetric];
-  const rows = rankingRows(series, side);
-  const column = document.createElement("div");
-  column.className = "ranking-column";
-  column.innerHTML = `
-    <div class="ranking-column-header">
-      <strong>${side.toUpperCase()}</strong>
-      <span>${metric.label}</span>
-    </div>
-    <ol class="ranking-list"></ol>
-  `;
-
-  const list = column.querySelector(".ranking-list");
-  rows.forEach((row, index) => {
-    const item = document.createElement("li");
-    item.className = "ranking-row";
-    const value = row[state.rankingMetric];
-    item.innerHTML = `
-      <span class="rank-number">#${index + 1}</span>
-      <div class="ranking-broker">
-        <span class="series-dot" style="--series-color:${brokerColor(row.broker)}"></span>
-        <span>${brokerName(row.broker)}</span>
-      </div>
-      <span class="ranking-value ${valueClass(value)}">${metric.format(value)}</span>
-    `;
-    list.appendChild(item);
-  });
-
-  return column;
-}
-
-function renderRanking(series) {
-  const tabs = document.querySelectorAll("#rankingTabs button");
-  tabs.forEach((button) => {
-    button.classList.toggle("active", button.dataset.rankingMetric === state.rankingMetric);
-  });
-
-  const metric = RANKING_METRICS[state.rankingMetric];
-  $("rankingDirection").textContent = state.rankingDirection === "desc"
-    ? "High → Low"
-    : "Low → High";
-  $("rankingContext").textContent = `${state.pair} · ${state.side.toUpperCase()} · ${metric.label}`;
-
-  const content = $("rankingContent");
-  content.innerHTML = "";
-  content.classList.toggle("both", state.side === "both");
-
-  if (state.side === "both") {
-    content.appendChild(renderRankingColumn("long", series));
-    content.appendChild(renderRankingColumn("short", series));
-  } else {
-    content.appendChild(renderRankingColumn(state.side, series));
+    $("spotRange").textContent = "";
   }
 }
 
 function sortMetrics(rows, key, direction) {
   return rows.slice().sort((a, b) => {
     if (key === "broker") {
-      const av = brokerName(a.broker);
-      const bv = brokerName(b.broker);
       return direction === "asc"
-        ? av.localeCompare(bv, "ja")
-        : bv.localeCompare(av, "ja");
+        ? brokerName(a.broker).localeCompare(brokerName(b.broker), "ja")
+        : brokerName(b.broker).localeCompare(brokerName(a.broker), "ja");
     }
-
     if (key === "since") {
       const av = a.startDate || "";
       const bv = b.startDate || "";
       return direction === "asc" ? av.localeCompare(bv) : bv.localeCompare(av);
     }
-
     const av = a[key];
     const bv = b[key];
     if (!Number.isFinite(av) && !Number.isFinite(bv)) return 0;
@@ -430,11 +298,7 @@ function sortMetrics(rows, key, direction) {
 function sortHeader(label, key) {
   const active = state.tableSort.key === key;
   const marker = active ? (state.tableSort.direction === "asc" ? "↑" : "↓") : "";
-  return `
-    <button class="sort-header-button ${active ? "active-sort" : ""}" data-table-sort="${key}">
-      ${label}<span class="sort-marker">${marker}</span>
-    </button>
-  `;
+  return `<button class="sort-header-button ${active ? "active-sort" : ""}" data-table-sort="${key}">${label}<span class="sort-marker">${marker}</span></button>`;
 }
 
 function bindTableSort() {
@@ -447,7 +311,7 @@ function bindTableSort() {
         state.tableSort.key = key;
         state.tableSort.direction = key === "broker" || key === "since" ? "asc" : "desc";
       }
-      render();
+      renderDashboard();
     });
   });
 }
@@ -468,34 +332,28 @@ function renderPerformanceTable(series, spotReference) {
         shortReturn: short.totalReturn,
         longSwap: long.cumulativeSwap,
         shortSwap: short.cumulativeSwap,
-        since: long.startDate,
         startDate: long.startDate,
       };
     });
-
     const sorted = sortMetrics(rows, state.tableSort.key, state.tableSort.direction);
+    head.innerHTML = `<tr>
+      <th>${sortHeader("Broker", "broker")}</th>
+      <th>${sortHeader("Long return", "longReturn")}</th>
+      <th>${sortHeader("Short return", "shortReturn")}</th>
+      <th>${sortHeader("Long swap", "longSwap")}</th>
+      <th>${sortHeader("Short swap", "shortSwap")}</th>
+      <th>${sortHeader("Since", "since")}</th>
+    </tr>`;
 
-    head.innerHTML = `
-      <tr>
-        <th>${sortHeader("Broker", "broker")}</th>
-        <th>${sortHeader("Long return", "longReturn")}</th>
-        <th>${sortHeader("Short return", "shortReturn")}</th>
-        <th>${sortHeader("Long swap", "longSwap")}</th>
-        <th>${sortHeader("Short swap", "shortSwap")}</th>
-        <th>${sortHeader("Since", "since")}</th>
-      </tr>
-    `;
-
-    for (const rowData of sorted) {
+    for (const metric of sorted) {
       const row = document.createElement("tr");
       row.innerHTML = `
-        <td><div class="broker-cell"><span class="series-dot" style="--series-color:${brokerColor(rowData.broker)}"></span>${brokerName(rowData.broker)}</div></td>
-        <td class="return-value ${valueClass(rowData.longReturn)}">${formatPct(rowData.longReturn)}</td>
-        <td class="return-value ${valueClass(rowData.shortReturn)}">${formatPct(rowData.shortReturn)}</td>
-        <td class="${valueClass(rowData.longSwap)}">${formatJpy(rowData.longSwap)}</td>
-        <td class="${valueClass(rowData.shortSwap)}">${formatJpy(rowData.shortSwap)}</td>
-        <td>${formatDate(rowData.startDate)}</td>
-      `;
+        <td><div class="broker-cell"><span class="series-dot" style="--series-color:${brokerColor(metric.broker)}"></span>${brokerName(metric.broker)}</div></td>
+        <td class="return-value ${valueClass(metric.longReturn)}">${formatPct(metric.longReturn)}</td>
+        <td class="return-value ${valueClass(metric.shortReturn)}">${formatPct(metric.shortReturn)}</td>
+        <td class="${valueClass(metric.longSwap)}">${formatJpy(metric.longSwap)}</td>
+        <td class="${valueClass(metric.shortSwap)}">${formatJpy(metric.shortSwap)}</td>
+        <td>${formatDate(metric.startDate)}</td>`;
       body.appendChild(row);
     }
 
@@ -507,21 +365,16 @@ function renderPerformanceTable(series, spotReference) {
         <td><div class="broker-cell"><span class="series-dot" style="--series-color:${SPOT_COLOR}"></span>Spot only</div></td>
         <td class="return-value ${valueClass(last.spotLongIndex - 100)}">${formatPct(last.spotLongIndex - 100)}</td>
         <td class="return-value ${valueClass(last.spotShortIndex - 100)}">${formatPct(last.spotShortIndex - 100)}</td>
-        <td class="neutral">—</td>
-        <td class="neutral">—</td>
-        <td>${formatDate(spotReference[0].date)}</td>
-      `;
+        <td class="neutral">—</td><td class="neutral">—</td>
+        <td>${formatDate(spotReference[0].date)}</td>`;
       body.appendChild(row);
     }
-
     bindTableSort();
     return;
   }
 
-  const metrics = series
-    .map((item) => metricsFor(item, state.side))
-    .filter(Boolean);
-  const sortKeyMap = {
+  const metrics = series.map((item) => metricsFor(item, state.side)).filter(Boolean);
+  const keyMap = {
     total: "totalReturn",
     spot: "spotReturn",
     swapContribution: "swapContribution",
@@ -529,19 +382,20 @@ function renderPerformanceTable(series, spotReference) {
     since: "since",
     broker: "broker",
   };
-  const mappedSortKey = sortKeyMap[state.tableSort.key] || state.tableSort.key;
-  const sorted = sortMetrics(metrics, mappedSortKey, state.tableSort.direction);
+  const sorted = sortMetrics(
+    metrics,
+    keyMap[state.tableSort.key] || state.tableSort.key,
+    state.tableSort.direction
+  );
 
-  head.innerHTML = `
-    <tr>
-      <th>${sortHeader("Broker", "broker")}</th>
-      <th>${sortHeader("Total return", "total")}</th>
-      <th>${sortHeader("Spot return", "spot")}</th>
-      <th>${sortHeader("Swap contribution", "swapContribution")}</th>
-      <th>${sortHeader("Cumulative swap", "cumulativeSwap")}</th>
-      <th>${sortHeader("Since", "since")}</th>
-    </tr>
-  `;
+  head.innerHTML = `<tr>
+    <th>${sortHeader("Broker", "broker")}</th>
+    <th>${sortHeader("Total return", "total")}</th>
+    <th>${sortHeader("Spot return", "spot")}</th>
+    <th>${sortHeader("Swap contribution", "swapContribution")}</th>
+    <th>${sortHeader("Cumulative swap", "cumulativeSwap")}</th>
+    <th>${sortHeader("Since", "since")}</th>
+  </tr>`;
 
   for (const metric of sorted) {
     const row = document.createElement("tr");
@@ -551,66 +405,48 @@ function renderPerformanceTable(series, spotReference) {
       <td class="${valueClass(metric.spotReturn)}">${formatPct(metric.spotReturn)}</td>
       <td class="${valueClass(metric.swapContribution)}">${formatPct(metric.swapContribution)}</td>
       <td class="${valueClass(metric.cumulativeSwap)}">${formatJpy(metric.cumulativeSwap)}</td>
-      <td>${formatDate(metric.startDate)}</td>
-    `;
+      <td>${formatDate(metric.startDate)}</td>`;
     body.appendChild(row);
   }
 
   if (spotReference.length) {
     const last = spotReference.at(-1);
-    const spotKey = state.side === "long" ? "spotLongIndex" : "spotShortIndex";
-    const spotReturn = last[spotKey] - 100;
+    const key = state.side === "long" ? "spotLongIndex" : "spotShortIndex";
+    const spotReturn = last[key] - 100;
     const row = document.createElement("tr");
     row.className = "benchmark-row";
     row.innerHTML = `
       <td><div class="broker-cell"><span class="series-dot" style="--series-color:${SPOT_COLOR}"></span>Spot only</div></td>
       <td class="return-value ${valueClass(spotReturn)}">${formatPct(spotReturn)}</td>
       <td class="${valueClass(spotReturn)}">${formatPct(spotReturn)}</td>
-      <td class="neutral">0.00%</td>
-      <td class="neutral">—</td>
-      <td>${formatDate(spotReference[0].date)}</td>
-    `;
+      <td class="neutral">0.00%</td><td class="neutral">—</td>
+      <td>${formatDate(spotReference[0].date)}</td>`;
     body.appendChild(row);
   }
-
   bindTableSort();
 }
 
 function renderChart(series, spotReference) {
-  if (!window.echarts) {
-    throw new Error("EChartsを読み込めませんでした。ネットワーク接続を確認してください。");
-  }
+  if (!window.echarts) throw new Error("EChartsを読み込めませんでした。");
   if (!state.chart) {
     state.chart = echarts.init($("chart"));
     window.addEventListener("resize", () => state.chart.resize());
   }
 
   const chartSeries = [];
-
   for (const item of series) {
     const name = brokerName(item.broker);
     const color = brokerColor(item.broker);
-
     if (state.side === "long" || state.side === "both") {
       chartSeries.push({
-        name: `${name} Long`,
-        type: "line",
-        showSymbol: false,
-        smooth: false,
-        color,
-        lineStyle: { width: 2.2, color },
-        emphasis: { focus: "series" },
+        name: `${name} Long`, type: "line", showSymbol: false, color,
+        lineStyle: { width: 2.2, color }, emphasis: { focus: "series" },
         data: item.points.map((point) => [point.date, point.longIndex]),
       });
     }
-
     if (state.side === "short" || state.side === "both") {
       chartSeries.push({
-        name: `${name} Short`,
-        type: "line",
-        showSymbol: false,
-        smooth: false,
-        color,
+        name: `${name} Short`, type: "line", showSymbol: false, color,
         lineStyle: { width: 1.8, type: "dashed", color, opacity: 0.86 },
         emphasis: { focus: "series" },
         data: item.points.map((point) => [point.date, point.shortIndex]),
@@ -622,90 +458,167 @@ function renderChart(series, spotReference) {
     if (state.side === "long" || state.side === "both") {
       chartSeries.push({
         name: state.side === "both" ? "Spot only Long" : "Spot only",
-        type: "line",
-        showSymbol: false,
-        color: SPOT_COLOR,
+        type: "line", showSymbol: false, color: SPOT_COLOR,
         lineStyle: { width: 1.5, type: "dotted", color: SPOT_COLOR, opacity: 0.9 },
         data: spotReference.map((point) => [point.date, point.spotLongIndex]),
       });
     }
-
     if (state.side === "short" || state.side === "both") {
       chartSeries.push({
         name: state.side === "both" ? "Spot only Short" : "Spot only",
-        type: "line",
-        showSymbol: false,
-        color: SPOT_COLOR,
+        type: "line", showSymbol: false, color: SPOT_COLOR,
         lineStyle: { width: 1.5, type: "dotted", color: SPOT_COLOR, opacity: 0.9 },
         data: spotReference.map((point) => [point.date, point.spotShortIndex]),
       });
     }
   }
 
-  state.chart.setOption(
-    {
-      backgroundColor: "transparent",
-      animationDuration: 240,
-      grid: { left: 62, right: 24, top: 56, bottom: 48 },
-      legend: {
-        top: 10,
-        left: 14,
-        itemWidth: 20,
-        itemHeight: 7,
-        textStyle: { color: "#7f8d9c", fontSize: 11 },
-        inactiveColor: "#3f4a56",
-      },
-      tooltip: {
-        trigger: "axis",
-        axisPointer: { type: "line", lineStyle: { color: "#344050", width: 1 } },
-        backgroundColor: "rgba(9, 13, 18, 0.96)",
-        borderColor: "#27313d",
-        borderWidth: 1,
-        textStyle: { color: "#e7edf4", fontSize: 11 },
-        extraCssText: "box-shadow:0 14px 34px rgba(0,0,0,.32);border-radius:7px;",
-        valueFormatter: (value) => Number(value).toFixed(2),
-      },
-      xAxis: {
-        type: "time",
-        boundaryGap: false,
-        axisLine: { lineStyle: { color: "#24303b" } },
-        axisTick: { show: false },
-        axisLabel: { color: "#667382", fontSize: 10, hideOverlap: true },
-        splitLine: { show: false },
-      },
-      yAxis: {
-        type: "value",
-        scale: true,
-        axisLine: { show: false },
-        axisTick: { show: false },
-        axisLabel: {
-          color: "#667382",
-          fontSize: 10,
-          formatter: (value) => value.toFixed(1),
-        },
-        splitLine: { lineStyle: { color: "rgba(74, 88, 103, 0.16)" } },
-      },
-      dataZoom: [
-        {
-          type: "inside",
-          filterMode: "none",
-          zoomOnMouseWheel: false,
-          moveOnMouseMove: true,
-          moveOnMouseWheel: false,
-        },
-      ],
-      series: chartSeries,
+  state.chart.setOption({
+    backgroundColor: "transparent",
+    animationDuration: 240,
+    grid: { left: 62, right: 24, top: 56, bottom: 48 },
+    legend: { top: 10, left: 14, itemWidth: 20, itemHeight: 7, textStyle: { color: "#7f8d9c", fontSize: 11 }, inactiveColor: "#3f4a56" },
+    tooltip: {
+      trigger: "axis",
+      axisPointer: { type: "line", lineStyle: { color: "#344050", width: 1 } },
+      backgroundColor: "rgba(9,13,18,.96)", borderColor: "#27313d", borderWidth: 1,
+      textStyle: { color: "#e7edf4", fontSize: 11 },
+      extraCssText: "box-shadow:0 14px 34px rgba(0,0,0,.32);border-radius:7px;",
+      valueFormatter: (value) => Number(value).toFixed(2),
     },
-    true
-  );
+    xAxis: { type: "time", boundaryGap: false, axisLine: { lineStyle: { color: "#24303b" } }, axisTick: { show: false }, axisLabel: { color: "#667382", fontSize: 10, hideOverlap: true }, splitLine: { show: false } },
+    yAxis: { type: "value", scale: true, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: "#667382", fontSize: 10, formatter: (value) => value.toFixed(1) }, splitLine: { lineStyle: { color: "rgba(74,88,103,.16)" } } },
+    dataZoom: [{ type: "inside", filterMode: "none", zoomOnMouseWheel: false, moveOnMouseMove: true, moveOnMouseWheel: false }],
+    series: chartSeries,
+  }, true);
+}
+
+function rankingPairCandidates(pair) {
+  const pairSeries = state.data.series[pair] || {};
+  const candidates = [];
+
+  for (const [broker, item] of Object.entries(pairSeries)) {
+    const points = periodPoints(item.points);
+    if (points.length >= 2) candidates.push({ broker, points });
+  }
+  if (!candidates.length) return [];
+
+  // Keep the longest available requested window for this pair. Brokers whose
+  // history starts later do not shorten the ranking period for everyone else.
+  const pairStart = candidates.map((item) => item.points[0].date).sort()[0];
+  const eligible = candidates.filter((item) => item.points[0].date === pairStart);
+
+  return eligible
+    .map((item) => ({ broker: item.broker, points: rebase(item.points, pairStart) }))
+    .filter((item) => item.points.length >= 2);
+}
+
+function bestBrokerForPair(pair, side) {
+  const series = rankingPairCandidates(pair);
+  if (!series.length) return null;
+  const metricDef = RANKING_METRICS[state.rankingMetric];
+  const rows = series.map((item) => metricsFor(item, side)).filter(Boolean);
+  if (!rows.length) return null;
+
+  rows.sort((a, b) => {
+    const av = a[state.rankingMetric];
+    const bv = b[state.rankingMetric];
+    if (!Number.isFinite(av) && !Number.isFinite(bv)) return 0;
+    if (!Number.isFinite(av)) return 1;
+    if (!Number.isFinite(bv)) return -1;
+    return metricDef.best === "min" ? av - bv : bv - av;
+  });
+
+  return { pair, ...rows[0] };
+}
+
+function pairRankingRows(side) {
+  const rows = state.data.pairs
+    .map((pair) => bestBrokerForPair(pair, side))
+    .filter(Boolean);
+
+  rows.sort((a, b) => {
+    const av = a[state.rankingMetric];
+    const bv = b[state.rankingMetric];
+    if (!Number.isFinite(av) && !Number.isFinite(bv)) return a.pair.localeCompare(b.pair);
+    if (!Number.isFinite(av)) return 1;
+    if (!Number.isFinite(bv)) return -1;
+    return state.rankingDirection === "asc" ? av - bv : bv - av;
+  });
+  return rows;
+}
+
+function renderPairRankingColumn(side) {
+  const metricDef = RANKING_METRICS[state.rankingMetric];
+  const rows = pairRankingRows(side);
+  const column = document.createElement("div");
+  column.className = "pair-ranking-column";
+  column.innerHTML = `
+    <div class="pair-ranking-side">
+      <strong>${side.toUpperCase()}</strong>
+      <span>Each pair uses its best ${metricDef.label} broker</span>
+    </div>
+    <div class="table-scroll">
+      <table class="pair-ranking-table">
+        <thead>
+          <tr>
+            <th>#</th><th>Pair</th><th>Best broker</th>
+            <th>${metricDef.label}</th><th>Total Return</th><th>Swap</th>
+            <th>Max DD</th><th>Volatility</th><th>Since</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>`;
+
+  const body = column.querySelector("tbody");
+  rows.forEach((metric, index) => {
+    const row = document.createElement("tr");
+    row.title = `Open ${metric.pair} in Dashboard`;
+    row.innerHTML = `
+      <td class="pair-rank">#${index + 1}</td>
+      <td class="pair-name">${metric.pair}</td>
+      <td><span class="best-broker"><span class="series-dot" style="--series-color:${brokerColor(metric.broker)}"></span>${brokerName(metric.broker)}</span></td>
+      <td class="metric-primary ${valueClass(metric[state.rankingMetric])}">${metricDef.format(metric[state.rankingMetric])}</td>
+      <td class="${valueClass(metric.totalReturn)}">${formatPct(metric.totalReturn)}</td>
+      <td class="${valueClass(metric.swapContribution)}">${formatPct(metric.swapContribution)}</td>
+      <td class="${valueClass(metric.maxDrawdown)}">${formatPct(metric.maxDrawdown)}</td>
+      <td>${formatPct(metric.volatility)}</td>
+      <td class="coverage-note">${formatDate(metric.startDate)}</td>`;
+    row.addEventListener("click", () => openPairInDashboard(metric.pair));
+    body.appendChild(row);
+  });
+
+  if (!rows.length) {
+    column.innerHTML += '<div class="ranking-empty">No comparable pairs for this range.</div>';
+  }
+  return column;
+}
+
+function renderPairRanking() {
+  document.querySelectorAll("#rankingTabs button").forEach((button) => {
+    button.classList.toggle("active", button.dataset.rankingMetric === state.rankingMetric);
+  });
+  const metricDef = RANKING_METRICS[state.rankingMetric];
+  $("rankingDirection").textContent = state.rankingDirection === "desc" ? "High → Low" : "Low → High";
+  const rangeLabel = state.customStart ? `From ${formatDate(state.customStart)}` : state.period;
+  $("rankingContext").textContent = `${state.side.toUpperCase()} · ${rangeLabel} · ${metricDef.label}`;
+
+  const content = $("pairRankingContent");
+  content.innerHTML = "";
+  content.classList.toggle("both", state.side === "both");
+
+  if (state.side === "both") {
+    content.appendChild(renderPairRankingColumn("long"));
+    content.appendChild(renderPairRankingColumn("short"));
+  } else {
+    content.appendChild(renderPairRankingColumn(state.side));
+  }
 }
 
 function renderPeriodState() {
   document.querySelectorAll("#periodButtons button").forEach((button) => {
-    button.classList.toggle(
-      "active",
-      !state.customStart && button.dataset.period === state.period
-    );
+    button.classList.toggle("active", !state.customStart && button.dataset.period === state.period);
   });
 }
 
@@ -715,50 +628,89 @@ function resetSortsForSide() {
     : { key: "total", direction: "desc" };
 }
 
-function render() {
+function renderDashboard() {
   renderBrokerButtons();
-  renderPeriodState();
-
   const comparisonSeries = comparisonBrokerSeries();
   const chartSeries = chartBrokerSeries();
   const spotReference = longestSpotReference();
 
-  renderRanking(comparisonSeries);
   renderPerformanceTable(comparisonSeries, spotReference);
   renderChart(chartSeries, spotReference);
-  renderRangeSummary(chartSeries, comparisonSeries, spotReference);
+  renderRangeSummary(chartSeries, comparisonSeries);
 
-  const rangeLabel = state.customStart
-    ? `From ${formatDate(state.customStart)}`
-    : state.period;
+  const rangeLabel = state.customStart ? `From ${formatDate(state.customStart)}` : state.period;
   $("chartTitle").textContent = `${state.pair} · ${state.side.toUpperCase()} · ${rangeLabel}`;
+}
 
+function renderView() {
+  const ranking = state.view === "ranking";
+  document.body.classList.toggle("ranking-mode", ranking);
+  $("dashboardView").hidden = ranking;
+  $("rankingView").hidden = !ranking;
+  $("pairField").hidden = ranking;
+  $("brokerFilterStrip").hidden = ranking;
+
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    button.classList.toggle("active", button.dataset.view === state.view);
+  });
+
+  renderPeriodState();
   document.querySelectorAll("#sideButtons button").forEach((button) => {
     button.classList.toggle("active", button.dataset.side === state.side);
   });
+
+  if (ranking) {
+    updateDateBounds();
+    renderPairRanking();
+  } else {
+    updateDateBounds();
+    renderDashboard();
+    requestAnimationFrame(() => state.chart?.resize());
+  }
+}
+
+function openPairInDashboard(pair) {
+  state.pair = pair;
+  $("pairSelect").value = pair;
+  state.view = "dashboard";
+  const available = Object.keys(state.data.series[pair] || {});
+  state.brokers = new Set(available);
+  updateDateBounds();
+  resetSortsForSide();
+  renderView();
+  window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 function updateDateBounds() {
-  const pairSeries = state.data.series[state.pair] || {};
+  const input = $("customStartDate");
   const starts = [];
   const ends = [];
 
-  for (const item of Object.values(pairSeries)) {
-    if (item?.points?.length) {
-      starts.push(item.points[0].date);
-      ends.push(item.points.at(-1).date);
+  if (state.view === "ranking") {
+    for (const pairSeries of Object.values(state.data.series)) {
+      for (const item of Object.values(pairSeries)) {
+        if (item?.points?.length) {
+          starts.push(item.points[0].date);
+          ends.push(item.points.at(-1).date);
+        }
+      }
+    }
+  } else {
+    const pairSeries = state.data.series[state.pair] || {};
+    for (const item of Object.values(pairSeries)) {
+      if (item?.points?.length) {
+        starts.push(item.points[0].date);
+        ends.push(item.points.at(-1).date);
+      }
     }
   }
 
-  const input = $("customStartDate");
   input.min = starts.length ? starts.sort()[0] : "";
   input.max = ends.length ? ends.sort().at(-1) : "";
 }
 
 function setupControls() {
   const pairSelect = $("pairSelect");
-  pairSelect.innerHTML = "";
-
   for (const pair of state.data.pairs) {
     const option = document.createElement("option");
     option.value = pair;
@@ -769,23 +721,31 @@ function setupControls() {
   const preferred = ["USD/JPY", "TRY/JPY", "CHF/TRY", "USD/CHF"];
   state.pair = preferred.find((pair) => state.data.pairs.includes(pair)) || state.data.pairs[0];
   pairSelect.value = state.pair;
+  state.brokers = new Set(Object.keys(state.data.series[state.pair] || {}));
 
   pairSelect.addEventListener("change", () => {
     state.pair = pairSelect.value;
     state.customStart = null;
     $("customStartDate").value = "";
-    const available = Object.keys(state.data.series[state.pair] || {});
-    state.brokers = new Set(available);
-    updateDateBounds();
+    state.brokers = new Set(Object.keys(state.data.series[state.pair] || {}));
     resetSortsForSide();
-    render();
+    updateDateBounds();
+    renderView();
+  });
+
+  document.querySelectorAll("[data-view]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.view = button.dataset.view;
+      updateDateBounds();
+      renderView();
+    });
   });
 
   document.querySelectorAll("#sideButtons button").forEach((button) => {
     button.addEventListener("click", () => {
       state.side = button.dataset.side;
       resetSortsForSide();
-      render();
+      renderView();
     });
   });
 
@@ -794,42 +754,39 @@ function setupControls() {
       state.period = button.dataset.period;
       state.customStart = null;
       $("customStartDate").value = "";
-      render();
+      renderView();
     });
   });
 
   document.querySelectorAll("#rankingTabs button").forEach((button) => {
     button.addEventListener("click", () => {
       state.rankingMetric = button.dataset.rankingMetric;
-      state.rankingDirection = defaultRankingDirection(state.rankingMetric);
-      render();
+      state.rankingDirection = RANKING_METRICS[state.rankingMetric].defaultDirection;
+      renderPairRanking();
     });
   });
 
   $("rankingDirection").addEventListener("click", () => {
     state.rankingDirection = state.rankingDirection === "desc" ? "asc" : "desc";
-    render();
+    renderPairRanking();
   });
 
   $("customStartDate").addEventListener("change", (event) => {
-    const value = event.target.value;
-    state.customStart = value || null;
-    if (!value) state.period = "1Y";
-    render();
+    state.customStart = event.target.value || null;
+    if (!state.customStart) state.period = "1Y";
+    renderView();
   });
 
   $("clearCustomDate").addEventListener("click", () => {
     state.customStart = null;
     state.period = "1Y";
     $("customStartDate").value = "";
-    render();
+    renderView();
   });
 
-  const initialBrokers = Object.keys(state.data.series[state.pair] || {});
-  state.brokers = new Set(initialBrokers);
-  updateDateBounds();
-  state.rankingDirection = defaultRankingDirection(state.rankingMetric);
+  state.rankingDirection = RANKING_METRICS[state.rankingMetric].defaultDirection;
   resetSortsForSide();
+  updateDateBounds();
 }
 
 async function boot() {
@@ -837,29 +794,21 @@ async function boot() {
     const response = await fetch("./data/site-data.json", { cache: "no-store" });
     if (!response.ok) throw new Error(`data HTTP ${response.status}`);
     state.data = await response.json();
-
-    if (!state.data.pairs?.length) {
-      throw new Error("表示できる通貨ペアがまだありません。データ更新workflowを実行してください。");
-    }
+    if (!state.data.pairs?.length) throw new Error("表示できる通貨ペアがありません。");
 
     $("unitLabel").textContent = Number(state.data.metadata.unit).toLocaleString("ja-JP");
     const generated = new Date(state.data.metadata.generated_at);
     $("updatedAt").textContent = generated.toLocaleString("ja-JP", {
-      timeZone: "Asia/Tokyo",
-      year: "numeric",
-      month: "2-digit",
-      day: "2-digit",
-      hour: "2-digit",
-      minute: "2-digit",
+      timeZone: "Asia/Tokyo", year: "numeric", month: "2-digit",
+      day: "2-digit", hour: "2-digit", minute: "2-digit",
     });
 
     setupControls();
-    render();
+    renderView();
   } catch (error) {
     console.error(error);
-    const box = $("errorState");
-    box.hidden = false;
-    box.textContent = `TrueRateの読み込みに失敗しました: ${error.message}`;
+    $("errorState").hidden = false;
+    $("errorState").textContent = `TrueRateの読み込みに失敗しました: ${error.message}`;
   }
 }
 

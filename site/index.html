@@ -33,8 +33,13 @@
     </header>
 
     <main class="dashboard">
-      <section class="toolbar" aria-label="Dashboard filters">
-        <div class="field pair-field">
+      <nav class="view-tabs" aria-label="View">
+        <button data-view="dashboard" class="active">Dashboard</button>
+        <button data-view="ranking">Ranking</button>
+      </nav>
+
+      <section class="toolbar" id="toolbar" aria-label="Dashboard filters">
+        <div class="field pair-field" id="pairField">
           <label for="pairSelect">Pair</label>
           <select id="pairSelect"></select>
         </div>
@@ -68,69 +73,72 @@
         </div>
       </section>
 
-      <section class="broker-filter-strip">
+      <section class="broker-filter-strip" id="brokerFilterStrip">
         <div class="strip-label">Brokers</div>
         <div id="brokerButtons" class="broker-buttons"></div>
       </section>
 
-      <section class="chart-panel">
-        <header class="panel-header">
-          <div>
-            <div class="panel-kicker">TOTAL RETURN INDEX</div>
-            <div class="title-line">
-              <h1 id="chartTitle">—</h1>
-              <span class="index-badge">Start = 100</span>
+      <div id="dashboardView">
+        <section class="chart-panel">
+          <header class="panel-header">
+            <div>
+              <div class="panel-kicker">TOTAL RETURN INDEX</div>
+              <div class="title-line">
+                <h1 id="chartTitle">—</h1>
+                <span class="index-badge">Start = 100</span>
+              </div>
             </div>
+            <div class="range-summary">
+              <span id="comparisonRange">—</span>
+              <span id="spotRange" class="muted-range"></span>
+            </div>
+          </header>
+          <div id="chart"></div>
+        </section>
+
+        <section class="performance-panel">
+          <header class="panel-header table-header">
+            <div>
+              <div class="panel-kicker">BROKER PERFORMANCE</div>
+              <h2>Return comparison</h2>
+            </div>
+            <div class="table-note">Click a column to sort · Swap is reflected on D+1 JST</div>
+          </header>
+
+          <div class="table-scroll">
+            <table class="performance-table">
+              <thead id="performanceHead"></thead>
+              <tbody id="performanceBody"></tbody>
+            </table>
           </div>
-          <div class="range-summary">
-            <span id="comparisonRange">—</span>
-            <span id="spotRange" class="muted-range"></span>
+        </section>
+      </div>
+
+      <div id="rankingView" hidden>
+        <section class="pair-ranking-panel">
+          <header class="panel-header ranking-header">
+            <div>
+              <div class="panel-kicker">CURRENCY PAIR RANKING</div>
+              <h1>Best broker by pair</h1>
+            </div>
+            <div class="ranking-context" id="rankingContext">—</div>
+          </header>
+
+          <div class="ranking-toolbar">
+            <div class="ranking-tabs" id="rankingTabs">
+              <button data-ranking-metric="totalReturn" class="active">Total Return</button>
+              <button data-ranking-metric="annualizedReturn">Annualized Return</button>
+              <button data-ranking-metric="swapContribution">Swap Contribution</button>
+              <button data-ranking-metric="annualizedSwap">Annualized Swap</button>
+              <button data-ranking-metric="maxDrawdown">Max Drawdown</button>
+              <button data-ranking-metric="volatility">Volatility</button>
+            </div>
+            <button id="rankingDirection" class="sort-direction-button" type="button">High → Low</button>
           </div>
-        </header>
 
-        <div id="chart"></div>
-      </section>
-
-      <section class="ranking-panel">
-        <header class="panel-header ranking-header">
-          <div>
-            <div class="panel-kicker">BROKER RANKING</div>
-            <h2>Metric ranking</h2>
-          </div>
-          <div class="ranking-context" id="rankingContext">—</div>
-        </header>
-
-        <div class="ranking-toolbar">
-          <div class="ranking-tabs" id="rankingTabs">
-            <button data-ranking-metric="totalReturn" class="active">Total Return</button>
-            <button data-ranking-metric="annualizedReturn">Annualized Return</button>
-            <button data-ranking-metric="swapContribution">Swap Contribution</button>
-            <button data-ranking-metric="annualizedSwap">Annualized Swap</button>
-            <button data-ranking-metric="maxDrawdown">Max Drawdown</button>
-            <button data-ranking-metric="volatility">Volatility</button>
-          </div>
-          <button id="rankingDirection" class="sort-direction-button" type="button">High → Low</button>
-        </div>
-
-        <div id="rankingContent" class="ranking-content"></div>
-      </section>
-
-      <section class="performance-panel">
-        <header class="panel-header table-header">
-          <div>
-            <div class="panel-kicker">BROKER PERFORMANCE</div>
-            <h2>Return comparison</h2>
-          </div>
-          <div class="table-note">Swap is reflected on D+1 JST</div>
-        </header>
-
-        <div class="table-scroll">
-          <table class="performance-table">
-            <thead id="performanceHead"></thead>
-            <tbody id="performanceBody"></tbody>
-          </table>
-        </div>
-      </section>
+          <div id="pairRankingContent" class="pair-ranking-content"></div>
+        </section>
+      </div>
 
       <details class="methodology">
         <summary>Methodology & data notes</summary>
@@ -141,11 +149,11 @@
           </div>
           <div>
             <strong>Spot reference</strong>
-            <p>業者間でスワップ差を比較しやすくするため、為替部分には共通参照レートを使用します。業者固有のBid/Askとスプレッドは含みません。</p>
+            <p>MAXグラフのSpot onlyは、選択業者のうち最も古いデータ開始日に揃えます。Spotだけが業者より古い期間まで伸びることはありません。</p>
           </div>
           <div>
-            <strong>Comparison window</strong>
-            <p>Return ComparisonとRankingは選択中の全業者が揃う共通開始日から計算します。MAXグラフは各業者の取得可能な履歴を表示し、Spot onlyは最も古い業者の開始日より前には表示しません。</p>
+            <strong>Pair ranking</strong>
+            <p>各通貨ペアで、指定期間を最も長くカバーできる業者群を比較し、選択指標で最良の1社を採用します。その最良業者の値で通貨ペア同士をランキングします。</p>
           </div>
         </div>
       </details>

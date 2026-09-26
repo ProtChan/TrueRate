@@ -38,6 +38,16 @@ jobs:
                   s=m.group(0).replace("\n"," ")
                   if "swap" in s.lower() or "cllapi" in s.lower() or "adddays" in s.lower():
                       print(s[:700])
+          print("\nSAMPLE CSV")
+          samples=[
+              "https://www.invast.jp/triauto/service/summary/swap_csv/2026/DAILY_SWAP_POINT_LIST_20260924.csv",
+              "https://www.invast.jp/triauto/service/summary/swap_csv/2026/DAILY_SWAP_POINT_LIST_20260923.csv",
+              "https://www.invast.jp/swappoint/adddays/valuedate_202609.csv",
+          ]
+          for u in samples:
+              z=requests.get(u,headers=h,timeout=30)
+              print("\nCSV",z.status_code,u,len(z.content))
+              print(z.content[:4000].decode("utf-8-sig",errors="replace"))
           for src in scripts:
               u=urljoin(r.url,src)
               try:

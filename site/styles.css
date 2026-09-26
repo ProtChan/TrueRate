@@ -312,7 +312,9 @@ input[type="date"]:focus {
 
 .chart-panel,
 .ranking-panel,
-.performance-panel {
+.performance-panel,
+.detail-chart-panel,
+.pair-detail-hero {
   margin-top: 10px;
   border: 1px solid var(--border);
   border-radius: 9px;
@@ -1060,5 +1062,118 @@ body.arbitrage-mode .toolbar {
 @media (max-width: 680px) {
   body.arbitrage-mode .toolbar {
     grid-template-columns: 1fr;
+  }
+}
+
+
+body.pair-detail-mode .toolbar {
+  grid-template-columns: minmax(170px, .9fr) minmax(360px, 1.7fr) minmax(190px, .9fr);
+}
+
+.pair-detail-hero {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px;
+}
+
+.detail-summary-strip {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  margin-top: 10px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--border);
+  gap: 1px;
+}
+
+.detail-summary-strip > div {
+  min-width: 0;
+  padding: 12px 14px;
+  background: var(--surface);
+}
+
+.detail-summary-strip span {
+  display: block;
+  margin-bottom: 5px;
+  color: var(--muted-2);
+  font-size: .62rem;
+  font-weight: 760;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+}
+
+.detail-summary-strip strong {
+  display: block;
+  overflow: hidden;
+  color: var(--text);
+  font-size: .86rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.detail-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.detail-chart-panel {
+  overflow: hidden;
+}
+
+.detail-chart {
+  width: 100%;
+  height: 390px;
+}
+
+.wide-detail-chart {
+  margin-top: 10px;
+}
+
+.spread-detail-chart {
+  height: 420px;
+}
+
+.detail-arb-table {
+  min-width: 900px;
+}
+
+.detail-arb-table th:nth-child(2),
+.detail-arb-table th:nth-child(3),
+.detail-arb-table td:nth-child(2),
+.detail-arb-table td:nth-child(3) {
+  text-align: left;
+}
+
+@media (max-width: 960px) {
+  .detail-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .detail-summary-strip {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .detail-summary-strip > div:last-child {
+    grid-column: span 2;
+  }
+}
+
+@media (max-width: 680px) {
+  body.pair-detail-mode .toolbar {
+    grid-template-columns: 1fr;
+  }
+
+  .pair-detail-hero {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .detail-chart {
+    height: 340px;
   }
 }

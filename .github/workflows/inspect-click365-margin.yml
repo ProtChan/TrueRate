@@ -27,10 +27,11 @@ jobs:
           u="https://www.tfx.co.jp/historical/fx/margin.html"
           r=requests.get(u,headers=h,timeout=30)
           r.raise_for_status()
-          soup=BeautifulSoup(r.text,"html.parser")
-          h3=next(x for x in soup.find_all(["h2","h3"]) if "個人用為替証拠金基準額（レバレッジ25倍方式）" in x.get_text(" ",strip=True))
-          link=h3.find_next("a",href=True)
-          csv_url=urljoin(r.url,link["href"])
+          import re
+          matches=re.findall(r'href=["\\\']([^"\\\']*\\d{8}fxmargin\\.csv)["\\\']',r.text,re.I)
+          if not matches:
+              raise RuntimeError("no personal 25x margin CSV links found")
+          csv_url=urljoin(r.url,matches[0])
           print("URL",csv_url)
           c=requests.get(csv_url,headers=h,timeout=30)
           print("STATUS",c.status_code,c.headers.get("content-type"),len(c.content))

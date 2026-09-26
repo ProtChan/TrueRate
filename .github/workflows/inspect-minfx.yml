@@ -43,6 +43,34 @@ jobs:
                   z=m.group(0).replace("\n"," ")
                   if any(k in z.lower() for k in ("swap","calendar","api","json","csv","fetch")):
                       print(z[:1100])
+          print("\nFORMS")
+          for form in soup.find_all("form"):
+              print("FORM",form.get("action"),form.get("method"))
+              for tag in form.find_all(["select","input","option","button"]):
+                  print(tag.name,tag.get("name"),tag.get("value"),tag.get("selected"),tag.get_text(" ",strip=True)[:100])
+          print("\nSELECTS")
+          for sel in soup.find_all("select"):
+              print("SELECT",sel.get("id"),sel.get("name"),[(o.get("value"),o.get_text(" ",strip=True),bool(o.get("selected"))) for o in sel.find_all("option")][:80])
+          print("\nQUERY PROBES")
+          probes=[
+              {"year":"2026","month":"8"},
+              {"year":"2025","month":"12"},
+              {"ym":"202608"},
+              {"date":"202608"},
+              {"month":"202608"},
+              {"yyyymm":"202608"},
+          ]
+          for params in probes:
+              try:
+                  q=requests.get(u,params=params,headers=h,timeout=30)
+                  qs=BeautifulSoup(q.text,"html.parser")
+                  dates=[]
+                  for tr in qs.select("table.table-swap tbody tr"):
+                      cells=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
+                      if cells: dates.append(cells[0])
+                  print("PROBE",params,q.url,len(q.text),dates[:5])
+              except Exception as e:
+                  print("PROBE_ERR",params,e)
           print("\nASSETS")
           for su in scripts:
               try:

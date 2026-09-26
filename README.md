@@ -4,6 +4,7 @@ TrueRate is a static FX total-return dashboard that separates common market move
 
 Supported brokers/products:
 
+- **サクソバンク証券**
 - **OANDA Japan NYサーバー**
 - **OANDA Japan 東京サーバー**
 - **外為オンライン**
@@ -61,6 +62,7 @@ The browser rebases broker-to-broker comparisons to a shared visible start date.
 
 ## Data sources
 
+- サクソバンク証券: official historical + weekly swap-point PDFs
 - OANDA Japan NY: official monthly NY4 swap-history JSON (2019-04 onward)
 - OANDA Japan 東京サーバー: official full-history swap CSV (quote-currency cashflow, 10,000 base units)
 - 外為オンライン: official monthly swap-point PDFs
@@ -96,6 +98,7 @@ scripts/
   update_data.py         incremental collection/build pipeline
 
 src/truerate/
+  brokers/saxo_fx.py     サクソバンク証券 historical + weekly PDF collector
   brokers/oanda_ny.py     OANDA Japan NY monthly-history collector
   brokers/oanda_tokyo.py    OANDA Japan Tokyo full-history CSV collector
   brokers/gaitame_online.py 外為オンライン monthly PDF collector
@@ -135,6 +138,7 @@ The data workflow runs every day at **09:15 JST**.
 
 On a new data set:
 
+- サクソバンク証券 imports the official historical PDF plus the current weekly PDF
 - OANDA Japan NY backfills from `2019-04`
 - OANDA Japan 東京サーバー imports the official full-history CSV (available back to 2019 in the current file)
 - 外為オンライン backfills from `2024-01`

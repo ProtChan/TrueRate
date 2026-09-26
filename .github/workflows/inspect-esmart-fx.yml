@@ -1,0 +1,56 @@
+name: Inspect eSmart FX swap source
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-esmart-fx.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests beautifulsoup4
+      - name: Inspect official web assets
+        run: |
+          python - <<'PY'
+          import re,requests
+          from bs4 import BeautifulSoup
+          from urllib.parse import urljoin
+          h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en;q=0.8"}
+
+          pages=[
+            "https://kabu.com/item/fx/sys/swap.html",
+            "https://kabu.com/item/fx/sys/swap_1.html",
+            "https://kabu.com/sp_ssl_content/fxapp_guide/index.html",
+          ]
+          for u in pages:
+              r=requests.get(u,headers=h,timeout=30)
+              print("\nPAGE",r.status_code,r.url,len(r.text))
+              soup=BeautifulSoup(r.text,"html.parser")
+              for s in soup.find_all("script",src=True):
+                  su=urljoin(r.url,s["src"])
+                  print("SCRIPT",su)
+                  try:
+                      x=requests.get(su,headers=h,timeout=30)
+                      txt=x.text
+                      if any(k in txt.lower() for k in ("swap","fx","api","json","history")):
+                          for m in re.finditer(r'.{0,260}(?:swap|api|json|history|fx).{0,900}',txt,re.I|re.S):
+                              z=m.group(0).replace("\n"," ")
+                              if any(k in z.lower() for k in ("swap","api","json","history")):
+                                  print("MATCH",z[:1400])
+                  except Exception as e:
+                      print("ERR",e)
+              for m in re.finditer(r'https?://[^"\'<> ]+',r.text):
+                  z=m.group(0)
+                  if any(k in z.lower() for k in ("swap","api","fx")):
+                      print("URL",z)
+              for m in re.finditer(r'["\']([^"\']*(?:swap|api|json|history)[^"\']*)["\']',r.text,re.I):
+                  print("INLINE",m.group(1)[:500])
+          PY

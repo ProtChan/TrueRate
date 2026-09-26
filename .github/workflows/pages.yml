@@ -4,6 +4,9 @@ on:
   push:
     branches:
       - main
+    paths-ignore:
+      - "data/**"
+      - "site/data/**"
   schedule:
     # 09:15 JST. GMO Gaika credits after the NY close around 06:00/07:00 JST.
     - cron: "15 0 * * *"

@@ -1,0 +1,36 @@
+name: Inspect Gaitame Online swaps
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-gaitameonline.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests pypdf
+      - name: Inspect official monthly PDFs
+        run: |
+          python - <<'PY'
+          import io, requests
+          from pypdf import PdfReader
+          h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en-US;q=0.9,en;q=0.8"}
+          for ym in ("202609","202608","202601","202501","202401","202301"):
+              u=f"https://www.gaitameonline.com/pdf/swap{ym}.pdf"
+              r=requests.get(u,headers=h,timeout=30)
+              print("PDF",ym,r.status_code,len(r.content),r.headers.get("content-type"))
+              if r.status_code==200 and r.content.startswith(b"%PDF"):
+                  reader=PdfReader(io.BytesIO(r.content))
+                  print("PAGES",len(reader.pages))
+                  for i,p in enumerate(reader.pages[:8]):
+                      txt=p.extract_text() or ""
+                      print("PAGE",ym,i,txt[:5000].replace("\n"," | "))
+          PY

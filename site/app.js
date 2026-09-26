@@ -514,12 +514,9 @@ function rankingPairCandidates(pair) {
   }
   if (!candidates.length) return [];
 
-  // Compare only brokers that cover the longest available requested window.
+  // Keep the longest available requested window for Ranking.
   const pairStart = candidates.map((item) => item.points[0].date).sort()[0];
-  const latestEnd = candidates.map((item) => item.points.at(-1).date).sort().at(-1);
-  const eligible = candidates.filter(
-    (item) => item.points[0].date === pairStart && item.points.at(-1).date === latestEnd
-  );
+  const eligible = candidates.filter((item) => item.points[0].date === pairStart);
 
   return eligible
     .map((item) => ({ broker: item.broker, points: rebase(item.points, pairStart) }))
@@ -649,8 +646,29 @@ function renderPairRanking() {
   content.appendChild(renderPairRankingColumn(state.side));
 }
 
+function arbitragePairCandidates(pair) {
+  const pairSeries = state.data.series[pair] || {};
+  const candidates = [];
+
+  for (const [broker, item] of Object.entries(pairSeries)) {
+    const points = periodPoints(item.points);
+    if (points.length >= 2) candidates.push({ broker, points });
+  }
+  if (candidates.length < 2) return [];
+
+  // Arbitrage legs must cover the same requested window.
+  const pairStart = candidates.map((item) => item.points[0].date).sort()[0];
+  const latestEnd = candidates.map((item) => item.points.at(-1).date).sort().at(-1);
+  return candidates
+    .filter(
+      (item) => item.points[0].date === pairStart && item.points.at(-1).date === latestEnd
+    )
+    .map((item) => ({ broker: item.broker, points: rebase(item.points, pairStart) }))
+    .filter((item) => item.points.length >= 2);
+}
+
 function arbitrageForPair(pair) {
-  const series = rankingPairCandidates(pair);
+  const series = arbitragePairCandidates(pair);
   if (series.length < 2) return null;
 
   const legs = series

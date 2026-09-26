@@ -916,9 +916,11 @@ body.ranking-mode .toolbar {
 .pair-ranking-table th:nth-child(1),
 .pair-ranking-table th:nth-child(2),
 .pair-ranking-table th:nth-child(3),
+.pair-ranking-table th:nth-child(4),
 .pair-ranking-table td:nth-child(1),
 .pair-ranking-table td:nth-child(2),
-.pair-ranking-table td:nth-child(3) {
+.pair-ranking-table td:nth-child(3),
+.pair-ranking-table td:nth-child(4) {
   text-align: left;
 }
 

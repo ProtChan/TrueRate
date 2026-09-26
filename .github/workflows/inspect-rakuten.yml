@@ -17,34 +17,35 @@ jobs:
         with:
           python-version: "3.12"
       - run: pip install requests beautifulsoup4
-      - name: Inspect Rakuten mapping and data
+      - name: Inspect Rakuten mapping
         run: |
           python - <<'PY'
-          import requests,re
+          import re,requests
           from bs4 import BeautifulSoup
           h={"User-Agent":"Mozilla/5.0","Accept-Language":"ja,en-US;q=0.9,en;q=0.8"}
-
-          jsu="https://www.rakuten-sec.co.jp/web/shared/js/s1-fx-spread_swap.js"
-          j=requests.get(jsu,headers=h,timeout=30)
-          print("JS",j.status_code,len(j.text))
-          print(j.text)
-
           u="https://www.rakuten-sec.co.jp/web/fx/spread_swap/"
           r=requests.get(u,headers=h,timeout=30)
           r.raise_for_status()
           r.encoding=r.apparent_encoding or r.encoding
           soup=BeautifulSoup(r.text,"html.parser")
-          print("TABLE_ROWS")
+          mapping={}
           for tr in soup.find_all("tr"):
-              attrs={k:v for k,v in tr.attrs.items() if "rate" in k.lower() or "swap" in k.lower() or "id" in k.lower()}
-              cells=[x.get_text(" ",strip=True) for x in tr.find_all(["th","td"])]
-              if cells and (attrs or any("/" in x for x in cells)):
-                  print("ROW",attrs,cells[:20])
-                  for td in tr.find_all(["th","td"]):
-                      a={k:v for k,v in td.attrs.items() if "rate" in k.lower() or "swap" in k.lower() or "id" in k.lower() or "code" in k.lower()}
-                      if a: print(" CELL",a,td.get_text(" ",strip=True)[:100])
+              label=(tr.find(["th","td"]).get_text(" ",strip=True) if tr.find(["th","td"]) else "")
+              target=tr.find(id=re.compile(r"^FXSWA\d+$"))
+              if not target:
+                  continue
+              idx=int(re.search(r"(\d+)$",target.get("id")).group(1))
+              mapping[idx]=label
+          print("MAPPING",mapping)
 
           d=requests.get("https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat",headers=h,timeout=30)
-          print("DATA",d.status_code,len(d.text))
-          print(d.text)
+          d.raise_for_status()
+          rows=[]
+          for line in d.text.splitlines():
+              parts=line.split("\t")
+              if len(parts)>=4 and parts[0].isdigit():
+                  rows.append((int(parts[0]),parts[1],parts[2],parts[3]))
+          print("DATA_ROWS",len(rows))
+          print("UNMAPPED_IDS",[x[0] for x in rows if x[0] not in mapping])
+          print("MAPPED_DATA",[(idx,mapping.get(idx),sell,buy,dt) for idx,sell,buy,dt in rows])
           PY

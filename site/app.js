@@ -17,6 +17,13 @@ const BROKER_COLORS = {
   gmo_gaika: "#60a5fa",
   gmo_click: "#f2b45f",
   triauto: "#b991ff",
+  minfx: "#22d3ee",
+  minfx_light: "#06b6d4",
+  lightfx: "#f472b6",
+  lightfx_light: "#ec4899",
+  sbi_fx: "#ef6f6c",
+  hirose: "#a3e635",
+  jfx: "#fb923c",
 };
 
 const SPOT_COLOR = "#94a3b8";

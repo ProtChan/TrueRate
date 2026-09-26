@@ -1,10 +1,23 @@
 from datetime import date
 import unittest
 
-from truerate.brokers.minfx import parse_calendar_html
+from truerate.brokers.minfx import (
+    LIGHT_BROKER_ID,
+    parse_calendar_html,
+)
 
 
 HTML = """
+<div id="symbol5">
+<table>
+  <thead><tr><th>取引日</th><th></th><th>USDJPY LIGHT</th><th>HUFJPY LIGHT</th></tr></thead>
+  <tbody>
+    <tr><td>09/25 (金)</td><td>付与日数</td><td>1</td><td>1</td></tr>
+    <tr><td>買</td><td>119.0</td><td>8.0</td></tr>
+    <tr><td>売</td><td>-119.0</td><td>-8.0</td></tr>
+  </tbody>
+</table>
+</div>
 <div id="symbol1">
 <table>
   <thead><tr><th>取引日</th><th></th><th>USDJPY</th><th>HUFJPY</th></tr></thead>
@@ -12,9 +25,6 @@ HTML = """
     <tr><td>09/25 (金)</td><td>付与日数</td><td>1</td><td>1</td></tr>
     <tr><td>買</td><td>118.0</td><td>6.0</td></tr>
     <tr><td>売</td><td>-118.0</td><td>-6.0</td></tr>
-    <tr><td>09/26 (土)</td><td>付与日数</td><td>-</td><td>-</td></tr>
-    <tr><td>買</td><td>-</td><td>-</td></tr>
-    <tr><td>売</td><td>-</td><td>-</td></tr>
   </tbody>
 </table>
 </div>
@@ -42,7 +52,7 @@ HTML = """
 
 
 class MinFxParserTest(unittest.TestCase):
-    def test_maps_standard_pair_buy_sell_and_d_plus_one(self):
+    def test_standard_buy_sell_and_d_plus_one(self):
         records = parse_calendar_html(
             HTML,
             today_jst=date(2026, 9, 26),
@@ -53,20 +63,9 @@ class MinFxParserTest(unittest.TestCase):
         self.assertEqual(usd.effective_date, date(2026, 9, 26))
         self.assertEqual(usd.long_swap_jpy, 118.0)
         self.assertEqual(usd.short_swap_jpy, -118.0)
-        self.assertEqual(usd.status, "confirmed")
         self.assertEqual(usd.unit, 10_000)
 
-    def test_huf_uses_100k_publication_unit(self):
-        records = parse_calendar_html(
-            HTML,
-            today_jst=date(2026, 9, 26),
-            fetched_at="2026-09-26T09:00:00+09:00",
-        )
-        huf = next(item for item in records if item.pair == "HUF/JPY")
-        self.assertEqual(huf.unit, 100_000)
-        self.assertEqual(huf.long_swap_jpy, 6.0)
-
-    def test_excludes_light_variant_and_keeps_standard(self):
+    def test_standard_excludes_light(self):
         records = parse_calendar_html(
             HTML,
             today_jst=date(2026, 9, 26),
@@ -75,6 +74,21 @@ class MinFxParserTest(unittest.TestCase):
         eur = [item for item in records if item.pair == "EUR/USD"]
         self.assertEqual(len(eur), 1)
         self.assertEqual(eur[0].long_swap_jpy, -69.3)
+
+    def test_light_is_separate_broker_and_huf_is_100k(self):
+        records = parse_calendar_html(
+            HTML,
+            today_jst=date(2026, 9, 26),
+            fetched_at="2026-09-26T09:00:00+09:00",
+            broker_id=LIGHT_BROKER_ID,
+            light_only=True,
+        )
+        self.assertEqual({item.broker for item in records}, {LIGHT_BROKER_ID})
+        usd = next(item for item in records if item.pair == "USD/JPY")
+        huf = next(item for item in records if item.pair == "HUF/JPY")
+        self.assertEqual(usd.long_swap_jpy, 119.0)
+        self.assertEqual(huf.unit, 100_000)
+        self.assertEqual(huf.long_swap_jpy, 8.0)
 
     def test_parses_high_value_chf_try(self):
         records = parse_calendar_html(

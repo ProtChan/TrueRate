@@ -10,27 +10,33 @@ from bs4 import BeautifulSoup
 from truerate.models import SwapRecord
 
 BROKER_ID = "minfx"
+LIGHT_BROKER_ID = "minfx_light"
 BROKER_NAME = "みんなのFX"
+LIGHT_BROKER_NAME = "みんなのFX LIGHT"
 JST = ZoneInfo("Asia/Tokyo")
 SOURCE_URL = "https://min-fx.jp/market/swap/"
 
 DEFAULT_UNIT = 10_000
 PAIR_UNITS = {"HUF/JPY": 100_000}
 
-TABLE_IDS = ("symbol1", "symbol2", "symbol3", "symbol4", "symbol6")
+TABLE_IDS = ("symbol5", "symbol1", "symbol2", "symbol3", "symbol4", "symbol6")
 EXCLUDED_LABELS = {"RUBJPY", "USDJPYラージ"}
 DATE_RE = re.compile(r"(\d{1,2})/(\d{1,2})")
 
 
-def _pair_from_label(label: str) -> str | None:
+def _pair_from_label(label: str, *, light_only: bool) -> str | None:
+    upper = label.upper()
+    is_light = "LIGHT" in upper or "(L)" in upper
+    if is_light != light_only:
+        return None
+
     cleaned = (
-        label.replace("LIGHT", "")
+        upper.replace("LIGHT", "")
         .replace("(L)", "")
         .replace(" ", "")
         .strip()
-        .upper()
     )
-    if "LIGHT" in label.upper() or cleaned in EXCLUDED_LABELS or "ラージ" in cleaned:
+    if cleaned in EXCLUDED_LABELS or "ラージ" in cleaned:
         return None
     if len(cleaned) != 6 or not cleaned.isascii() or not cleaned.isalpha():
         return None
@@ -70,8 +76,10 @@ def parse_calendar_html(
     today_jst: date | None = None,
     fetched_at: str | None = None,
     source_url: str = SOURCE_URL,
+    broker_id: str = BROKER_ID,
+    light_only: bool = False,
 ) -> list[SwapRecord]:
-    """Parse the public rolling one-month みんなのFX swap calendar."""
+    """Parse the rolling public calendar for standard or LIGHT pairs."""
     if today_jst is None:
         today_jst = datetime.now(tz=JST).date()
     if fetched_at is None:
@@ -91,7 +99,7 @@ def parse_calendar_html(
         headers = [cell.get_text(" ", strip=True) for cell in table.select("thead th")]
         pair_columns: list[tuple[int, str]] = []
         for column, label in enumerate(headers[2:], start=2):
-            pair = _pair_from_label(label)
+            pair = _pair_from_label(label, light_only=light_only)
             if pair:
                 pair_columns.append((column, pair))
 
@@ -147,7 +155,7 @@ def parse_calendar_html(
 
                 records.append(
                     SwapRecord(
-                        broker=BROKER_ID,
+                        broker=broker_id,
                         pair=pair,
                         trade_date=trade_date,
                         effective_date=effective_date,
@@ -158,6 +166,7 @@ def parse_calendar_html(
                         status=status,
                         source=source_url,
                         fetched_at=fetched_at,
+                        swap_currency="JPY",
                     )
                 )
 
@@ -167,12 +176,11 @@ def parse_calendar_html(
     return sorted(deduped.values(), key=lambda item: (item.pair, item.trade_date))
 
 
-def collect_recent(
+def _fetch_html(
     *,
     session: requests.Session | None = None,
     timeout: int = 30,
-    today_jst: date | None = None,
-) -> list[SwapRecord]:
+) -> tuple[str, str]:
     client = session or requests.Session()
     client.headers.update(
         {
@@ -185,8 +193,42 @@ def collect_recent(
     )
     response = client.get(SOURCE_URL, timeout=timeout)
     response.raise_for_status()
-    return parse_calendar_html(
-        response.text,
+    return response.text, response.url
+
+
+def collect_recent_products(
+    *,
+    session: requests.Session | None = None,
+    timeout: int = 30,
+    today_jst: date | None = None,
+) -> tuple[list[SwapRecord], list[SwapRecord]]:
+    html, source_url = _fetch_html(session=session, timeout=timeout)
+    standard = parse_calendar_html(
+        html,
         today_jst=today_jst,
-        source_url=response.url,
+        source_url=source_url,
+        broker_id=BROKER_ID,
+        light_only=False,
     )
+    light = parse_calendar_html(
+        html,
+        today_jst=today_jst,
+        source_url=source_url,
+        broker_id=LIGHT_BROKER_ID,
+        light_only=True,
+    )
+    return standard, light
+
+
+def collect_recent(
+    *,
+    session: requests.Session | None = None,
+    timeout: int = 30,
+    today_jst: date | None = None,
+) -> list[SwapRecord]:
+    standard, _ = collect_recent_products(
+        session=session,
+        timeout=timeout,
+        today_jst=today_jst,
+    )
+    return standard

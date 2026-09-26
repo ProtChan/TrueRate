@@ -18,6 +18,7 @@ class SwapRecord:
     status: str
     source: str
     fetched_at: str
+    swap_currency: str = "JPY"
 
     def to_csv_row(self) -> dict[str, str]:
         row = asdict(self)

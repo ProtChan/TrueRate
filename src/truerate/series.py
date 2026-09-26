@@ -5,6 +5,30 @@ from datetime import date, timedelta
 from typing import Iterable
 
 BROKERS = {
+    "hirose": {
+        "id": "hirose",
+        "name": "ヒロセ通商 LION FX",
+    },
+    "jfx": {
+        "id": "jfx",
+        "name": "JFX MATRIX TRADER",
+    },
+    "lightfx": {
+        "id": "lightfx",
+        "name": "LIGHT FX",
+    },
+    "lightfx_light": {
+        "id": "lightfx_light",
+        "name": "LIGHT FX LIGHT",
+    },
+    "minfx_light": {
+        "id": "minfx_light",
+        "name": "みんなのFX LIGHT",
+    },
+    "sbi_fx": {
+        "id": "sbi_fx",
+        "name": "SBI FXトレード",
+    },
     "minfx": {
         "id": "minfx",
         "name": "みんなのFX",
@@ -111,7 +135,8 @@ def build_site_payload(
     currencies: set[str] = {"JPY"}
     for row in confirmed:
         base, quote = _split_pair(row["pair"])
-        currencies.update({base, quote})
+        swap_currency = (row.get("swap_currency") or "JPY").upper()
+        currencies.update({base, quote, swap_currency})
 
     min_trade_date = min(date.fromisoformat(row["trade_date"]) for row in confirmed)
     rates = _daily_rate_map(rate_rows, currencies, min_trade_date, today)
@@ -125,7 +150,11 @@ def build_site_payload(
 
     for (pair, broker), rows in sorted(grouped.items()):
         base, quote = _split_pair(pair)
-        required = {base, quote, "JPY"}
+        row_swap_currencies = {
+            (row.get("swap_currency") or "JPY").upper()
+            for row in rows
+        }
+        required = {base, quote, "JPY", *row_swap_currencies}
         if any(not rates.get(currency) for currency in required):
             continue
 
@@ -150,8 +179,15 @@ def build_site_payload(
             for row in by_effective_date.get(day, []):
                 row_unit = int(row["unit"])
                 scale = unit / row_unit
-                cumulative_long += float(row["long_swap_jpy"]) * scale
-                cumulative_short += float(row["short_swap_jpy"]) * scale
+                swap_currency = (row.get("swap_currency") or "JPY").upper()
+                if swap_currency == "JPY":
+                    to_jpy = 1.0
+                else:
+                    if day not in rates.get(swap_currency, {}):
+                        continue
+                    to_jpy = rates["JPY"][day] / rates[swap_currency][day]
+                cumulative_long += float(row["long_swap_jpy"]) * scale * to_jpy
+                cumulative_short += float(row["short_swap_jpy"]) * scale * to_jpy
 
             base_per_usd = rates[base][day]
             quote_per_usd = rates[quote][day]

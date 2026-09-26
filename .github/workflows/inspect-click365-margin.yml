@@ -1,0 +1,39 @@
+name: Inspect Click365 margin CSV
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/inspect-click365-margin.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  inspect:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install requests
+      - name: Inspect historical personal 25x margin CSV
+        run: |
+          python - <<'PY'
+          import requests
+          u="https://www.tfx.co.jp/mkinfo/data/fx-histrical.csv"
+          r=requests.get(u,headers={"User-Agent":"Mozilla/5.0"},timeout=30)
+          print("STATUS",r.status_code,len(r.content),r.headers.get("content-type"))
+          r.raise_for_status()
+          for enc in ("cp932","utf-8-sig","shift_jis"):
+              try:
+                  t=r.content.decode(enc)
+                  print("ENC",enc)
+                  print("HEAD")
+                  print("\n".join(t.splitlines()[:60]))
+                  print("TAIL")
+                  print("\n".join(t.splitlines()[-60:]))
+                  break
+              except Exception:
+                  pass
+          PY

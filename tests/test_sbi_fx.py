@@ -1,7 +1,7 @@
 from datetime import date
 import unittest
 
-from truerate.brokers.sbi_fx import parse_month_html
+from truerate.brokers.sbi_fx import effective_date_for_trade_date, parse_month_html
 
 
 HTML = """
@@ -38,7 +38,7 @@ class SbiParserTest(unittest.TestCase):
         mxn = next(item for item in records if item.pair == "MXN/JPY")
         krw = next(item for item in records if item.pair == "KRW/JPY")
 
-        self.assertEqual(usd.effective_date, date(2026, 9, 2))
+        self.assertEqual(usd.effective_date, date(2026, 9, 1))
         self.assertEqual(usd.long_swap_jpy, 117.0)
         self.assertEqual(usd.short_swap_jpy, -125.0)
         self.assertEqual(usd.unit, 10_000)
@@ -52,6 +52,16 @@ class SbiParserTest(unittest.TestCase):
         self.assertEqual(krw.long_swap_jpy, 11.0)
         self.assertEqual(krw.short_swap_jpy, -16.0)
         self.assertEqual(krw.unit, 1_000_000)
+
+    def test_saturday_rolls_to_following_monday(self):
+        self.assertEqual(
+            effective_date_for_trade_date(date(2026, 9, 5)),
+            date(2026, 9, 7),
+        )
+        self.assertEqual(
+            effective_date_for_trade_date(date(2026, 9, 6)),
+            date(2026, 9, 7),
+        )
 
 
 if __name__ == "__main__":

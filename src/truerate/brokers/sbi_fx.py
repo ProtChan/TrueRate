@@ -37,6 +37,15 @@ def _number(value: str) -> float | None:
         return None
 
 
+def effective_date_for_trade_date(trade_date: date) -> date:
+    """SBI calendar date is the TrueRate accrual date; weekend display rolls forward."""
+    if trade_date.weekday() == 5:
+        return trade_date + timedelta(days=2)
+    if trade_date.weekday() == 6:
+        return trade_date + timedelta(days=1)
+    return trade_date
+
+
 def parse_month_html(
     html: str,
     year: int,
@@ -105,7 +114,7 @@ def parse_month_html(
             else:
                 multiplier = 1.0
                 row_unit = 10_000
-            effective_date = trade_date + timedelta(days=1)
+            effective_date = effective_date_for_trade_date(trade_date)
             records.append(
                 SwapRecord(
                     broker=BROKER_ID,

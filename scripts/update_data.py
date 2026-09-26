@@ -21,7 +21,10 @@ from truerate.brokers.hirose import collect_history as collect_hirose_history
 from truerate.brokers.jfx import collect_history as collect_jfx_history
 from truerate.brokers.lightfx import collect_recent_products as collect_lightfx_products
 from truerate.brokers.minfx import collect_recent_products as collect_minfx_products
-from truerate.brokers.sbi_fx import collect_month as collect_sbi_month
+from truerate.brokers.sbi_fx import (
+    collect_month as collect_sbi_month,
+    effective_date_for_trade_date as sbi_effective_date_for_trade_date,
+)
 from truerate.brokers.gmo_click import (
     PAIR_START_DATES as GMO_CLICK_PAIR_START_DATES,
     collect_month as collect_gmo_click_month,
@@ -218,6 +221,11 @@ def refresh_sbi(
     for row in existing:
         if row.get("pair") == "KRW/JPY":
             row["unit"] = "1000000"
+        trade_date = date.fromisoformat(row["trade_date"])
+        effective_date = sbi_effective_date_for_trade_date(trade_date)
+        row["effective_date"] = effective_date.isoformat()
+        if row.get("long_swap_jpy", "") != "" and row.get("short_swap_jpy", "") != "":
+            row["status"] = "confirmed" if effective_date <= today else "scheduled"
     month_start = start if full or not existing else previous_month(today)
     incoming: list[dict[str, str]] = []
     current_pair_count = 0

@@ -1,0 +1,53 @@
+name: Verify normalized special-unit pairs
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - ".github/workflows/verify-special-units.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Inspect normalized rows and site deltas
+        run: |
+          python - <<'PY'
+          import csv,json
+          from pathlib import Path
+
+          checks=[
+              ("data/swaps/jfx.csv","HUF/JPY","jfx"),
+              ("data/swaps/sbi_fx.csv","KRW/JPY","sbi_fx"),
+              ("data/swaps/click365.csv","HUF/JPY","click365"),
+          ]
+          for path,pair,broker in checks:
+              rows=[]
+              with open(path,encoding="utf-8",newline="") as f:
+                  for r in csv.DictReader(f):
+                      if r["pair"]==pair and r["status"]=="confirmed":
+                          rows.append(r)
+              print("RAW",broker,pair,"count",len(rows),"last",rows[-3:])
+
+          data=json.loads(Path("site/data/site-data.json").read_text(encoding="utf-8"))
+          for pair,broker in [("HUF/JPY","jfx"),("KRW/JPY","sbi_fx"),("HUF/JPY","click365")]:
+              item=data["series"].get(pair,{}).get(broker)
+              if not item:
+                  print("SITE_MISSING",pair,broker)
+                  continue
+              pts=item["points"]
+              deltas=[]
+              for a,b in zip(pts[-8:-1],pts[-7:]):
+                  dl=b["cum_long_swap_jpy"]-a["cum_long_swap_jpy"]
+                  ds=b["cum_short_swap_jpy"]-a["cum_short_swap_jpy"]
+                  if abs(dl)>1e-9 or abs(ds)>1e-9:
+                      deltas.append((b["date"],round(dl,6),round(ds,6)))
+              print("SITE",broker,pair,"start",item["start_date"],"end",item["end_date"],"recent_swap_deltas",deltas)
+          PY

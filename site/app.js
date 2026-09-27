@@ -557,53 +557,51 @@ function fixedArbitrageCombinations(pair = state.pair) {
   return rows.sort((a, b) => b.netSwap - a.netSwap);
 }
 
-function dailyPairDispersion(pair = state.pair) {
-  const brokers = pairDailyBrokerSeries(pair);
-  const byDate = new Map();
+function periodSwapTotalRows(pair = state.pair) {
+  const pairSeries = state.data.series[pair] || {};
+  return Object.entries(pairSeries).map(([broker, item]) => {
+    const points = periodPoints(item.points || []);
+    if (points.length < 2) return null;
+    const rebased = rebase(points);
+    if (rebased.length < 2) return null;
+    const last = rebased.at(-1);
+    const days = Math.max(1, daysBetween(rebased[0].date, last.date));
+    return {
+      broker,
+      buyTotal: last.longSwapJpy,
+      sellTotal: last.shortSwapJpy,
+      buyAvg: last.longSwapJpy / days,
+      sellAvg: last.shortSwapJpy / days,
+      startDate: rebased[0].date,
+    };
+  }).filter(Boolean);
+}
 
-  for (const item of brokers) {
-    for (const point of item.points) {
-      if (!byDate.has(point.date)) byDate.set(point.date, []);
-      byDate.get(point.date).push({
-        broker: item.broker,
-        longSwap: point.longSwap,
-        shortSwap: point.shortSwap,
-      });
-    }
+function renderSwapTotalRanking(bodyId, rows, side) {
+  const totalKey = side === "long" ? "buyTotal" : "sellTotal";
+  const avgKey = side === "long" ? "buyAvg" : "sellAvg";
+  const body = $(bodyId);
+  body.innerHTML = "";
+
+  const ordered = rows.slice().sort((a, b) => {
+    const delta = b[totalKey] - a[totalKey];
+    return delta || brokerName(a.broker).localeCompare(brokerName(b.broker), "ja");
+  });
+
+  ordered.forEach((item, index) => {
+    const row = document.createElement("tr");
+    row.innerHTML = `
+      <td class="pair-rank">#${index + 1}</td>
+      <td><div class="broker-cell"><span class="series-dot" style="--series-color:${brokerColor(item.broker)}"></span>${brokerName(item.broker)}</div></td>
+      <td class="return-value ${valueClass(item[totalKey])}">${formatJpy(item[totalKey])}</td>
+      <td class="${valueClass(item[avgKey])}">${formatJpy(item[avgKey])}</td>
+      <td>${formatDate(item.startDate)}</td>`;
+    body.appendChild(row);
+  });
+
+  if (!ordered.length) {
+    body.innerHTML = '<tr><td colspan="5" class="ranking-empty">No swap history for this range.</td></tr>';
   }
-
-  const rows = [];
-  for (const [date, legs] of [...byDate.entries()].sort((a, b) => a[0].localeCompare(b[0]))) {
-    if (legs.length < 2) continue;
-    const longValues = legs.map((x) => x.longSwap).filter(Number.isFinite);
-    const shortValues = legs.map((x) => x.shortSwap).filter(Number.isFinite);
-    if (!longValues.length || !shortValues.length) continue;
-
-    let bestArb = null;
-    for (const buy of legs) {
-      for (const sell of legs) {
-        if (buy.broker === sell.broker) continue;
-        const net = buy.longSwap + sell.shortSwap;
-        if (!bestArb || net > bestArb.net) {
-          bestArb = {
-            net,
-            buyBroker: buy.broker,
-            sellBroker: sell.broker,
-          };
-        }
-      }
-    }
-
-    rows.push({
-      date,
-      buyRange: Math.max(...longValues) - Math.min(...longValues),
-      sellRange: Math.max(...shortValues) - Math.min(...shortValues),
-      arbNet: bestArb?.net ?? null,
-      buyBroker: bestArb?.buyBroker ?? null,
-      sellBroker: bestArb?.sellBroker ?? null,
-    });
-  }
-  return rows;
 }
 
 function renderPairDetail() {
@@ -651,32 +649,6 @@ function renderPairDetail() {
   renderDetailBrokerSelectors();
   renderSelectedArbitrageChart();
 
-  const dispersion = dailyPairDispersion();
-  const spreadSeries = [
-    {
-      name: "Best arb net",
-      type: "line",
-      showSymbol: false,
-      lineStyle: { width: 2.2 },
-      data: dispersion.map((row) => [row.date, row.arbNet]),
-    },
-    {
-      name: "Buy broker range",
-      type: "line",
-      showSymbol: false,
-      lineStyle: { width: 1.4, type: "dashed" },
-      data: dispersion.map((row) => [row.date, row.buyRange]),
-    },
-    {
-      name: "Sell broker range",
-      type: "line",
-      showSymbol: false,
-      lineStyle: { width: 1.4, type: "dashed" },
-      data: dispersion.map((row) => [row.date, row.sellRange]),
-    },
-  ];
-  ensureDetailChart("spreadChart").setOption(detailLineChartOption(spreadSeries), true);
-
   const combinations = fixedArbitrageCombinations();
   const best = combinations[0] || null;
   $("detailBestBuy").textContent = best ? brokerName(best.buyBroker) : "—";
@@ -686,10 +658,11 @@ function renderPairDetail() {
   $("detailAnnualizedSpread").textContent = best ? formatPct(best.annualizedSpread) : "—";
   $("detailAnnualizedSpread").className = best ? valueClass(best.annualizedSpread) : "";
 
-  const positiveDays = dispersion.filter((row) => Number.isFinite(row.arbNet) && row.arbNet > 0).length;
-  const comparableDays = dispersion.filter((row) => Number.isFinite(row.arbNet)).length;
-  $("detailPositiveDays").textContent = comparableDays
-    ? `${positiveDays} / ${comparableDays}`
+  const swapTotalRows = periodSwapTotalRows();
+  renderSwapTotalRanking("buySwapRankingBody", swapTotalRows, "long");
+  renderSwapTotalRanking("sellSwapRankingBody", swapTotalRows, "short");
+  $("detailBrokerCount").textContent = swapTotalRows.length
+    ? String(swapTotalRows.length)
     : "—";
 
   const arbBody = $("pairArbitrageBody");
@@ -713,22 +686,7 @@ function renderPairDetail() {
 
   const summaryBody = $("pairBrokerSummaryBody");
   summaryBody.innerHTML = "";
-  const summaryRows = Object.entries(pairSeries).map(([broker, item]) => {
-    const points = periodPoints(item.points || []);
-    if (points.length < 2) return null;
-    const rebased = rebase(points);
-    if (rebased.length < 2) return null;
-    const last = rebased.at(-1);
-    const days = Math.max(1, daysBetween(rebased[0].date, last.date));
-    return {
-      broker,
-      buyTotal: last.longSwapJpy,
-      sellTotal: last.shortSwapJpy,
-      buyAvg: last.longSwapJpy / days,
-      sellAvg: last.shortSwapJpy / days,
-      startDate: rebased[0].date,
-    };
-  }).filter(Boolean).sort((a, b) => b.buyTotal - a.buyTotal);
+  const summaryRows = swapTotalRows.slice().sort((a, b) => b.buyTotal - a.buyTotal);
 
   summaryRows.forEach((item) => {
     const row = document.createElement("tr");

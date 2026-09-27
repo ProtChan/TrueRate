@@ -8,6 +8,7 @@ CSV_TEXT = """TradeDate,Symbol,SwapLong,SwapShort
 2026-09-24,USD/JPY,36.8,-306.4
 2026-09-24,EUR/USD,-0.583,0.345
 2026-09-25,USD/TRY,-433.115,346.568
+2026-09-26,NZD/TRY,,215.4
 """
 
 
@@ -47,6 +48,17 @@ class OandaTokyoParserTest(unittest.TestCase):
         self.assertEqual(usdtry.swap_currency, "TRY")
         self.assertEqual(usdtry.effective_date, date(2026, 9, 28))
         self.assertEqual(usdtry.status, "scheduled")
+
+    def test_blank_side_is_preserved_as_unavailable(self):
+        records = parse_history_csv(
+            CSV_TEXT,
+            today_jst=date(2026, 9, 27),
+            fetched_at="2026-09-27T01:00:00+09:00",
+        )
+        row = next(item for item in records if item.pair == "NZD/TRY")
+        self.assertIsNone(row.long_swap_jpy)
+        self.assertEqual(row.short_swap_jpy, 215.4)
+        self.assertEqual(row.status, "unavailable")
 
 
 if __name__ == "__main__":

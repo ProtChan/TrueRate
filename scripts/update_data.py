@@ -14,6 +14,7 @@ SRC = ROOT / "src"
 sys.path.insert(0, str(SRC))
 
 from truerate.brokers.ainet_fx import collect_recent_products as collect_ainet_products
+from truerate.brokers.oanda_common import complete_supported_records, currently_unavailable_pairs
 from truerate.brokers.oanda_ny import collect_month as collect_oanda_ny_month
 from truerate.brokers.oanda_tokyo import collect_history as collect_oanda_tokyo_history
 from truerate.brokers.dmm_fx import collect_recent_products as collect_dmm_products
@@ -310,7 +311,7 @@ def refresh_oanda_ny(
 ) -> list[dict[str, str]]:
     existing = load_csv(OANDA_NY_SWAP_PATH)
     month_start = start if full or not existing else previous_month(today)
-    incoming: list[dict[str, str]] = []
+    incoming_records = []
     current_pair_count = 0
 
     for year, month in iter_months(month_start, today):
@@ -320,13 +321,26 @@ def refresh_oanda_ny(
         print(f"  {len(records)} rows / {pair_count} pairs")
         if year == today.year and month == today.month:
             current_pair_count = pair_count
-        incoming.extend(record.to_csv_row() for record in records)
+        incoming_records.extend(records)
 
     if current_pair_count < 60:
         raise RuntimeError(
             "OANDA NY current-month collector returned fewer than 60 pairs; "
             "refusing to publish possibly broken source data."
         )
+
+    unavailable_pairs = currently_unavailable_pairs(incoming_records, today=today)
+    if unavailable_pairs:
+        print(
+            "  excluding currently unavailable OANDA NY pairs: "
+            + ", ".join(sorted(unavailable_pairs))
+        )
+    existing = [row for row in existing if row.get("pair") not in unavailable_pairs]
+    supported_records = complete_supported_records(
+        incoming_records,
+        unavailable_pairs=unavailable_pairs,
+    )
+    incoming = [record.to_csv_row() for record in supported_records]
 
     merged = merge_swaps(existing, incoming)
     write_csv(OANDA_NY_SWAP_PATH, merged, SWAP_FIELDS)
@@ -345,7 +359,22 @@ def refresh_oanda_tokyo(today: date) -> list[dict[str, str]]:
             "refusing to publish possibly broken official CSV data."
         )
 
-    merged = merge_swaps(existing, [record.to_csv_row() for record in records])
+    unavailable_pairs = currently_unavailable_pairs(records, today=today)
+    if unavailable_pairs:
+        print(
+            "  excluding currently unavailable OANDA Tokyo pairs: "
+            + ", ".join(sorted(unavailable_pairs))
+        )
+    existing = [row for row in existing if row.get("pair") not in unavailable_pairs]
+    supported_records = complete_supported_records(
+        records,
+        unavailable_pairs=unavailable_pairs,
+    )
+
+    merged = merge_swaps(
+        existing,
+        [record.to_csv_row() for record in supported_records],
+    )
     write_csv(OANDA_TOKYO_SWAP_PATH, merged, SWAP_FIELDS)
     return merged
 

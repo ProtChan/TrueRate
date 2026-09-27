@@ -87,12 +87,21 @@ def parse_month_payload(
         if sp_days is None:
             continue
 
-        # Weekend placeholder rows are blank and carry no economic cashflow.
-        if long_swap is None and short_swap is None:
+        # Weekend placeholders are blank with zero days and carry no
+        # economic cashflow. A blank buy/sell side on an actual swap row is
+        # different: OANDA is not currently quoting that side.
+        if long_swap is None and short_swap is None and int(sp_days) == 0:
             continue
 
         effective_date = next_business_day_after(trade_date)
         amounts_present = long_swap is not None and short_swap is not None
+        if not amounts_present:
+            status = "unavailable"
+        elif effective_date <= today_jst:
+            status = "confirmed"
+        else:
+            status = "scheduled"
+
         records.append(
             SwapRecord(
                 broker=BROKER_ID,
@@ -103,11 +112,7 @@ def parse_month_payload(
                 long_swap_jpy=long_swap,
                 short_swap_jpy=short_swap,
                 unit=PAIR_UNITS.get(pair, 10_000),
-                status=(
-                    "confirmed"
-                    if amounts_present and effective_date <= today_jst
-                    else "scheduled"
-                ),
+                status=status,
                 source=source_url,
                 fetched_at=fetched_at,
                 swap_currency="JPY",

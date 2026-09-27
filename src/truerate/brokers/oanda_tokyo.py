@@ -52,11 +52,17 @@ def parse_history_csv(
 
         long_swap = _number(row.get("SwapLong") or "")
         short_swap = _number(row.get("SwapShort") or "")
-        if long_swap is None or short_swap is None:
-            continue
 
         effective_date = next_business_day_after(trade_date)
         quote = pair.split("/", 1)[1]
+        amounts_present = long_swap is not None and short_swap is not None
+        if not amounts_present:
+            status = "unavailable"
+        elif effective_date <= today_jst:
+            status = "confirmed"
+        else:
+            status = "scheduled"
+
         records.append(
             SwapRecord(
                 broker=BROKER_ID,
@@ -67,7 +73,7 @@ def parse_history_csv(
                 long_swap_jpy=long_swap,
                 short_swap_jpy=short_swap,
                 unit=10_000,
-                status="confirmed" if effective_date <= today_jst else "scheduled",
+                status=status,
                 source=source_url,
                 fetched_at=fetched_at,
                 swap_currency=quote,

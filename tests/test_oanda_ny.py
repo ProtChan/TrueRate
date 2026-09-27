@@ -44,6 +44,25 @@ class OandaNyParserTest(unittest.TestCase):
         )
         self.assertEqual(records[0].unit, 100_000)
 
+    def test_blank_side_marks_pair_unavailable_instead_of_zero(self):
+        payload = [
+            {"date": "09月25日（金）", "sell": "351.2", "buy": "", "days": "1"},
+            {"date": "09月26日（土）", "sell": "", "buy": "", "days": "0"},
+        ]
+        records = parse_month_payload(
+            payload,
+            year=2026,
+            month=9,
+            pair="USD/TRY",
+            today_jst=date(2026, 9, 27),
+            fetched_at="2026-09-27T06:00:00+09:00",
+        )
+        self.assertEqual(len(records), 1)
+        row = records[0]
+        self.assertIsNone(row.long_swap_jpy)
+        self.assertEqual(row.short_swap_jpy, 351.2)
+        self.assertEqual(row.status, "unavailable")
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -40,6 +40,7 @@ from truerate.brokers.gmo_gaika import collect_month as collect_gmo_gaika_month,
 from truerate.brokers.triauto import collect_month as collect_triauto_month
 from truerate.margins import build_margin_requirements
 from truerate.models import next_business_day_after
+from truerate.publish import write_sharded_site_payload
 from truerate.rates.frankfurter import fetch_usd_cross
 from truerate.series import build_site_payload
 
@@ -877,16 +878,10 @@ def main() -> int:
         unit=10_000,
         margin_requirements=margin_requirements,
     )
-    SITE_DATA_PATH.parent.mkdir(parents=True, exist_ok=True)
-    temp_json = SITE_DATA_PATH.with_suffix(".json.tmp")
-    temp_json.write_text(
-        json.dumps(payload, ensure_ascii=False, separators=(",", ":")),
-        encoding="utf-8",
-    )
-    temp_json.replace(SITE_DATA_PATH)
+    chunk_paths = write_sharded_site_payload(payload, SITE_DATA_PATH)
 
     print(
-        f"Published {len(payload['pairs'])} pairs, "
+        f"Published {len(payload['pairs'])} pairs across {len(chunk_paths)} series chunks, "
         f"{len(swaps)} swap rows, {len(rates)} reference-rate rows."
     )
     return 0

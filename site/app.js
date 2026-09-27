@@ -1665,11 +1665,35 @@ function setupControls() {
   updateDateBounds();
 }
 
+async function loadSiteData() {
+  const response = await fetch("./data/site-data.json", { cache: "no-store" });
+  if (!response.ok) throw new Error(`data HTTP ${response.status}`);
+  const data = await response.json();
+
+  if (Array.isArray(data.series_chunks) && data.series_chunks.length) {
+    const chunks = await Promise.all(
+      data.series_chunks.map(async (name) => {
+        const chunkResponse = await fetch(`./data/${name}`, { cache: "no-store" });
+        if (!chunkResponse.ok) {
+          throw new Error(`${name} HTTP ${chunkResponse.status}`);
+        }
+        return chunkResponse.json();
+      })
+    );
+    data.series = {};
+    for (const chunk of chunks) {
+      Object.assign(data.series, chunk.series || {});
+    }
+  } else {
+    data.series ||= {};
+  }
+
+  return data;
+}
+
 async function boot() {
   try {
-    const response = await fetch("./data/site-data.json", { cache: "no-store" });
-    if (!response.ok) throw new Error(`data HTTP ${response.status}`);
-    state.data = await response.json();
+    state.data = await loadSiteData();
     if (!state.data.pairs?.length) throw new Error("表示できる通貨ペアがありません。");
 
     $("unitLabel").textContent = Number(state.data.metadata.unit).toLocaleString("ja-JP");

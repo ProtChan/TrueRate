@@ -1623,8 +1623,6 @@ function setupControls() {
 
   pairSelect.addEventListener("change", () => {
     state.pair = pairSelect.value;
-    state.customStart = null;
-    $("customStartDate").value = "";
     resetDefaultBrokers();
     resetSortsForSide();
     updateDateBounds();

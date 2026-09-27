@@ -1121,6 +1121,27 @@ body.pair-detail-mode .toolbar {
   margin-top: 10px;
 }
 
+.detail-ranking-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.swap-ranking-panel {
+  margin-top: 0;
+  overflow: hidden;
+}
+
+.swap-ranking-table {
+  min-width: 560px;
+}
+
+.swap-ranking-table th:nth-child(2),
+.swap-ranking-table td:nth-child(2) {
+  text-align: left;
+}
+
 .detail-chart-panel {
   overflow: hidden;
 }
@@ -1150,7 +1171,8 @@ body.pair-detail-mode .toolbar {
 }
 
 @media (max-width: 960px) {
-  .detail-grid {
+  .detail-grid,
+  .detail-ranking-grid {
     grid-template-columns: 1fr;
   }
 

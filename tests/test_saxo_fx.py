@@ -24,17 +24,28 @@ class SaxoFxParserTest(unittest.TestCase):
         self.assertEqual(audcad.short_swap_jpy, -318.91)
         self.assertEqual(audcad.long_swap_jpy, 81.40)
         self.assertEqual(audcad.sp_days, 3)
-        self.assertEqual(audcad.effective_date, date(2026, 9, 18))
+        self.assertEqual(audcad.effective_date, date(2026, 9, 17))
 
-    def test_friday_rolls_to_monday(self):
+    def test_friday_uses_display_date(self):
+        records = parse_pdf_text(
+            TEXT,
+            today_jst=date(2026, 9, 18),
+            fetched_at="2026-09-18T09:00:00+09:00",
+        )
+        tr = next(item for item in records if item.pair == "TRY/JPY")
+        self.assertEqual(tr.effective_date, date(2026, 9, 18))
+        self.assertEqual(tr.long_swap_jpy, 25.0)
+        self.assertEqual(tr.status, "confirmed")
+
+    def test_excludes_precious_metals_and_other_non_fx_assets(self):
         records = parse_pdf_text(
             TEXT,
             today_jst=date(2026, 9, 21),
             fetched_at="2026-09-21T09:00:00+09:00",
         )
-        tr = next(item for item in records if item.pair == "TRY/JPY")
-        self.assertEqual(tr.effective_date, date(2026, 9, 21))
-        self.assertEqual(tr.long_swap_jpy, 25.0)
+        pairs = {item.pair for item in records}
+        self.assertNotIn("XAU/USD", pairs)
+        self.assertNotIn("XAG/JPY", pairs)
 
 
 if __name__ == "__main__":

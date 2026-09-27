@@ -5,7 +5,7 @@ from zoneinfo import ZoneInfo
 
 import requests
 
-from truerate.models import SwapRecord, next_business_day_after
+from truerate.models import SwapRecord
 
 BROKER_ID = "dmm_fx"
 BROKER_MINI_ID = "dmm_fx_mini"
@@ -81,7 +81,7 @@ def parse_pair_payload(
         if len(raw_date) != 8 or not raw_date.isdigit():
             continue
         trade_date = datetime.strptime(raw_date, "%Y%m%d").date()
-        effective_date = next_business_day_after(trade_date)
+        effective_date = trade_date
 
         long_swap = _number(item.get("buySwapAmount"))
         short_swap = _number(item.get("sellSwapAmount"))

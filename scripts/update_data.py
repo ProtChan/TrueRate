@@ -27,7 +27,10 @@ from truerate.brokers.hirose import collect_history as collect_hirose_history
 from truerate.brokers.jfx import collect_history as collect_jfx_history
 from truerate.brokers.lightfx import collect_recent_products as collect_lightfx_products
 from truerate.brokers.minfx import collect_recent_products as collect_minfx_products
-from truerate.brokers.saxo_fx import collect_history as collect_saxo_history
+from truerate.brokers.saxo_fx import (
+    collect_history as collect_saxo_history,
+    is_fx_pair as is_saxo_fx_pair,
+)
 from truerate.brokers.sbi_fx import (
     collect_month as collect_sbi_month,
     effective_date_for_trade_date as sbi_effective_date_for_trade_date,
@@ -122,8 +125,11 @@ def write_csv(path: Path, rows: list[dict[str, str]], fields: list[str]) -> None
 def _normalize_effective_date(row: dict[str, str]) -> dict[str, str]:
     normalized = dict(row)
     trade_date = date.fromisoformat(normalized["trade_date"])
-    if normalized.get("broker") == "sbi_fx":
+    broker = normalized.get("broker")
+    if broker == "sbi_fx":
         effective_date = sbi_effective_date_for_trade_date(trade_date)
+    elif broker in {"saxo_fx", "dmm_fx", "dmm_fx_mini", "dmm_fx_large"}:
+        effective_date = trade_date
     else:
         effective_date = next_business_day_after(trade_date)
     normalized["effective_date"] = effective_date.isoformat()
@@ -280,7 +286,10 @@ def refresh_sbi(
 
 
 def refresh_saxo(today: date) -> list[dict[str, str]]:
-    existing = load_csv(SAXO_SWAP_PATH)
+    existing = [
+        row for row in load_csv(SAXO_SWAP_PATH)
+        if is_saxo_fx_pair(row.get("pair", ""))
+    ]
     print("Collecting Saxo Bank official historical + weekly swap PDFs...")
     records = collect_saxo_history(today_jst=today)
     pair_count = len({record.pair for record in records})

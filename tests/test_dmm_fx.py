@@ -10,7 +10,7 @@ from truerate.brokers.dmm_fx import (
 
 
 class DmmFxParserTest(unittest.TestCase):
-    def test_standard_pair_maps_buy_sell_and_next_business_day(self):
+    def test_standard_pair_uses_display_date_as_effective_date(self):
         payload = {
             "body": {
                 "swap": [
@@ -29,7 +29,7 @@ class DmmFxParserTest(unittest.TestCase):
             payload,
             code="USD_JPY",
             broker=BROKER_ID,
-            today_jst=date(2026, 9, 28),
+            today_jst=date(2026, 9, 25),
             fetched_at="2026-09-28T09:00:00+09:00",
         )
         row = records[0]
@@ -37,7 +37,7 @@ class DmmFxParserTest(unittest.TestCase):
         self.assertEqual(row.long_swap_jpy, 119.0)
         self.assertEqual(row.short_swap_jpy, -122.0)
         self.assertEqual(row.unit, 10_000)
-        self.assertEqual(row.effective_date, date(2026, 9, 28))
+        self.assertEqual(row.effective_date, date(2026, 9, 25))
         self.assertEqual(row.status, "confirmed")
         self.assertEqual(row.swap_currency, "JPY")
 

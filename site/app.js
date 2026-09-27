@@ -7,6 +7,7 @@ const state = {
   customStart: null,
   brokers: new Set(),
   brokerSelectionDirty: false,
+  brokerFilterCollapsed: false,
   chart: null,
   detailCharts: {},
   detailSwapMode: "cumulative",
@@ -735,54 +736,100 @@ function openPairDetail(pair) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+function requestedRangeForPair(pair = state.pair) {
+  const pairSeries = state.data.series[pair] || {};
+  const allPoints = Object.values(pairSeries)
+    .map((item) => item.points || [])
+    .filter((points) => points.length);
+  if (!allPoints.length) return null;
+
+  const earliest = allPoints.map((points) => points[0].date).sort()[0];
+  const latest = allPoints.map((points) => points.at(-1).date).sort().at(-1);
+  let start = state.customStart || earliest;
+
+  if (!state.customStart && state.period !== "MAX") {
+    const cutoff = new Date(`${latest}T00:00:00Z`);
+    if (state.period === "1M") cutoff.setUTCMonth(cutoff.getUTCMonth() - 1);
+    if (state.period === "3M") cutoff.setUTCMonth(cutoff.getUTCMonth() - 3);
+    if (state.period === "1Y") cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 1);
+    if (state.period === "3Y") cutoff.setUTCFullYear(cutoff.getUTCFullYear() - 3);
+    start = cutoff.toISOString().slice(0, 10);
+  }
+
+  return { start, end: latest };
+}
+
+function brokerDefaultCandidate(broker, item, range) {
+  const rawPoints = item.points || [];
+  if (rawPoints.length < 2 || !range) return null;
+
+  const points = rawPoints.filter(
+    (point) => point.date >= range.start && point.date <= range.end
+  );
+  if (points.length < 2) return null;
+
+  const first = points[0];
+  const last = points.at(-1);
+  const coverageDays = Math.max(1, daysBetween(first.date, last.date));
+  const longTotal = last.cum_long_swap_jpy - first.cum_long_swap_jpy;
+  const shortTotal = last.cum_short_swap_jpy - first.cum_short_swap_jpy;
+  const swapScore =
+    state.side === "long" ? longTotal :
+    state.side === "short" ? shortTotal :
+    Math.max(longTotal, shortTotal);
+
+  return {
+    broker,
+    coverageDays,
+    fullCoverage:
+      rawPoints[0].date <= range.start &&
+      rawPoints.at(-1).date >= range.end,
+    swapScore,
+  };
+}
+
 function defaultBrokerSelection() {
   const pairSeries = state.data.series[state.pair] || {};
   const entries = Object.entries(pairSeries);
   if (!entries.length) return new Set();
 
-  let longestBroker = null;
-  let longestDays = -1;
-  let bestSwapBroker = null;
-  let bestSwapPerDay = -Infinity;
+  const range = requestedRangeForPair();
+  const candidates = entries
+    .map(([broker, item]) => brokerDefaultCandidate(broker, item, range))
+    .filter(Boolean);
 
-  for (const [broker, item] of entries) {
-    const rawPoints = item.points || [];
-    if (!rawPoints.length) continue;
-
-    const historyDays = daysBetween(rawPoints[0].date, rawPoints.at(-1).date);
-    if (historyDays > longestDays) {
-      longestDays = historyDays;
-      longestBroker = broker;
-    }
-
-    const points = periodPoints(rawPoints);
-    if (points.length < 2) continue;
-    const first = points[0];
-    const last = points.at(-1);
-    const holdingDays = Math.max(1, daysBetween(first.date, last.date));
-    const longSwapPerDay =
-      (last.cum_long_swap_jpy - first.cum_long_swap_jpy) / holdingDays;
-    const shortSwapPerDay =
-      (last.cum_short_swap_jpy - first.cum_short_swap_jpy) / holdingDays;
-    const candidateSwapPerDay =
-      state.side === "long" ? longSwapPerDay :
-      state.side === "short" ? shortSwapPerDay :
-      Math.max(longSwapPerDay, shortSwapPerDay);
-
-    if (Number.isFinite(candidateSwapPerDay) && candidateSwapPerDay > bestSwapPerDay) {
-      bestSwapPerDay = candidateSwapPerDay;
-      bestSwapBroker = broker;
-    }
+  if (!candidates.length) {
+    return new Set(entries.slice(0, 2).map(([broker]) => broker));
   }
 
-  const selected = new Set();
-  if (bestSwapBroker) selected.add(bestSwapBroker);
-  if (longestBroker) selected.add(longestBroker);
+  const compareSwap = (a, b) =>
+    (b.swapScore - a.swapScore) ||
+    (b.coverageDays - a.coverageDays) ||
+    brokerName(a.broker).localeCompare(brokerName(b.broker), "ja");
 
-  // If one broker is both best-swap and longest-history, showing one line is
-  // intentional; the user can add any other broker manually.
-  if (!selected.size && entries[0]) selected.add(entries[0][0]);
-  return selected;
+  const maxCoverageDays = Math.max(...candidates.map((item) => item.coverageDays));
+  const fullCoverage = candidates.filter((item) => item.fullCoverage);
+  const primaryPool = fullCoverage.length
+    ? fullCoverage
+    : candidates.filter((item) => item.coverageDays === maxCoverageDays);
+  primaryPool.sort(compareSwap);
+
+  const selected = [];
+  if (primaryPool[0]) selected.push(primaryPool[0]);
+
+  if (primaryPool.length >= 2) {
+    selected.push(primaryPool[1]);
+  } else {
+    const remaining = candidates
+      .filter((item) => item.broker !== selected[0]?.broker)
+      .sort((a, b) =>
+        (b.coverageDays - a.coverageDays) ||
+        compareSwap(a, b)
+      );
+    if (remaining[0]) selected.push(remaining[0]);
+  }
+
+  return new Set(selected.slice(0, 2).map((item) => item.broker));
 }
 
 function resetDefaultBrokers() {
@@ -801,6 +848,12 @@ function renderBrokerButtons() {
   const pairSeries = state.data.series[state.pair] || {};
   const container = $("brokerButtons");
   container.innerHTML = "";
+  $("brokerFilterStrip").classList.toggle("collapsed", state.brokerFilterCollapsed);
+  $("brokerFilterToggle").setAttribute(
+    "aria-expanded",
+    state.brokerFilterCollapsed ? "false" : "true"
+  );
+  $("brokerFilterSummary").textContent = `${state.brokers.size} selected`;
 
   for (const broker of state.data.brokers) {
     if (!pairSeries[broker.id]) continue;
@@ -1544,6 +1597,11 @@ function setupControls() {
   if (hashedPair && state.data.pairs.includes(hashedPair)) state.view = "pairdetail";
   pairSelect.value = state.pair;
   resetDefaultBrokers();
+
+  $("brokerFilterToggle").addEventListener("click", () => {
+    state.brokerFilterCollapsed = !state.brokerFilterCollapsed;
+    renderBrokerButtons();
+  });
 
   $("selectAllBrokers").addEventListener("click", () => {
     state.brokerSelectionDirty = true;

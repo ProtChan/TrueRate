@@ -247,26 +247,70 @@ input[type="date"]:focus {
 }
 
 .broker-filter-strip {
-  display: flex;
-  align-items: center;
-  gap: 14px;
-  min-height: 46px;
   margin-top: 10px;
-  padding: 0 12px;
   border: 1px solid var(--border);
   border-radius: 8px;
   background: var(--surface);
+  overflow: hidden;
+}
+
+.broker-filter-toggle {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  gap: 10px;
+  padding: 0 12px;
+  border: 0;
+  color: var(--text);
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.broker-filter-toggle:hover {
+  background: rgba(255, 255, 255, 0.02);
 }
 
 .strip-label {
   flex: 0 0 auto;
   margin: 0;
+  font-weight: 760;
+}
+
+.broker-filter-summary {
+  color: var(--muted-2);
+  font-size: 0.68rem;
+}
+
+.broker-filter-chevron {
+  margin-left: auto;
+  color: var(--muted-2);
+  font-size: 0.8rem;
+  transition: transform 120ms ease;
+}
+
+.broker-filter-strip.collapsed .broker-filter-chevron {
+  transform: rotate(180deg);
+}
+
+.broker-filter-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  padding: 0 12px 8px;
+  border-top: 1px solid rgba(32, 42, 54, 0.55);
+}
+
+.broker-filter-strip.collapsed .broker-filter-content {
+  display: none;
 }
 
 .broker-filter-actions {
   display: flex;
   flex: 0 0 auto;
   gap: 5px;
+  padding-top: 6px;
 }
 
 .broker-filter-actions button {
@@ -289,9 +333,10 @@ input[type="date"]:focus {
 
 .broker-buttons {
   display: flex;
+  flex: 1 1 auto;
   flex-wrap: wrap;
   gap: 6px;
-  padding: 6px 0;
+  padding: 6px 0 0;
 }
 
 .broker-buttons button {
@@ -620,19 +665,24 @@ footer {
     grid-template-columns: repeat(5, 1fr);
   }
 
-  .broker-filter-strip {
-    align-items: flex-start;
+  .broker-filter-content {
     flex-direction: column;
-    gap: 6px;
-    padding: 9px 10px 7px;
+    gap: 4px;
+    padding: 0 10px 8px;
   }
 
   .broker-filter-actions {
     width: 100%;
+    padding-top: 7px;
   }
 
   .broker-filter-actions button {
     flex: 1;
+  }
+
+  .broker-buttons {
+    width: 100%;
+    padding-top: 2px;
   }
 
   .panel-header {

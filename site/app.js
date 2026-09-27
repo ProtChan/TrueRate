@@ -790,6 +790,13 @@ function resetDefaultBrokers() {
   state.brokers = defaultBrokerSelection();
 }
 
+function availableBrokerIds(pair = state.pair) {
+  const pairSeries = state.data.series[pair] || {};
+  return state.data.brokers
+    .map((broker) => broker.id)
+    .filter((id) => Boolean(pairSeries[id]));
+}
+
 function renderBrokerButtons() {
   const pairSeries = state.data.series[state.pair] || {};
   const container = $("brokerButtons");
@@ -1537,6 +1544,24 @@ function setupControls() {
   if (hashedPair && state.data.pairs.includes(hashedPair)) state.view = "pairdetail";
   pairSelect.value = state.pair;
   resetDefaultBrokers();
+
+  $("selectAllBrokers").addEventListener("click", () => {
+    state.brokerSelectionDirty = true;
+    state.brokers = new Set(availableBrokerIds());
+    renderDashboard();
+  });
+
+  $("clearBrokers").addEventListener("click", () => {
+    state.brokerSelectionDirty = true;
+    const available = availableBrokerIds();
+    const keep =
+      available.find((id) => state.brokers.has(id))
+      || [...defaultBrokerSelection()].find((id) => available.includes(id))
+      || available[0]
+      || null;
+    state.brokers = keep ? new Set([keep]) : new Set();
+    renderDashboard();
+  });
 
   pairSelect.addEventListener("change", () => {
     state.pair = pairSelect.value;

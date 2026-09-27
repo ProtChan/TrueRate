@@ -1559,7 +1559,12 @@ function updateDateBounds() {
 
 function setupControls() {
   const pairSelect = $("pairSelect");
-  for (const pair of state.data.pairs) {
+  const orderedPairs = state.data.pairs.slice().sort((a, b) => {
+    const brokerCountA = Object.keys(state.data.series[a] || {}).length;
+    const brokerCountB = Object.keys(state.data.series[b] || {}).length;
+    return brokerCountB - brokerCountA || a.localeCompare(b);
+  });
+  for (const pair of orderedPairs) {
     const option = document.createElement("option");
     option.value = pair;
     option.textContent = pair;

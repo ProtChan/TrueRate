@@ -13,6 +13,7 @@ const state = {
   detailBuyBroker: null,
   detailSellBroker: null,
   detailBrokerPairKey: null,
+  detailSwapRankingSort: { key: "buyTotal", direction: "desc" },
   rankingMetric: "totalReturn",
   rankingDirection: "desc",
   arbitrageDirection: "desc",
@@ -577,14 +578,32 @@ function periodSwapTotalRows(pair = state.pair) {
   }).filter(Boolean);
 }
 
-function renderSwapTotalRanking(bodyId, rows, side) {
-  const totalKey = side === "long" ? "buyTotal" : "sellTotal";
-  const avgKey = side === "long" ? "buyAvg" : "sellAvg";
-  const body = $(bodyId);
+function detailSwapRankingHeader(label, key) {
+  const sort = state.detailSwapRankingSort;
+  const active = sort.key === key;
+  const marker = active ? (sort.direction === "desc" ? "↓" : "↑") : "";
+  return `<button class="sort-header-button ${active ? "active-sort" : ""}" data-detail-swap-sort="${key}">${label}<span class="sort-marker">${marker}</span></button>`;
+}
+
+function renderSwapTotalRanking(rows) {
+  const sort = state.detailSwapRankingSort;
+  const body = $("swapRankingBody");
+  const head = $("swapRankingHead");
   body.innerHTML = "";
+  head.innerHTML = `<tr>
+    <th>#</th>
+    <th>Broker</th>
+    <th>${detailSwapRankingHeader("Buy swap", "buyTotal")}</th>
+    <th>${detailSwapRankingHeader("Sell swap", "sellTotal")}</th>
+    <th>Buy avg/day</th>
+    <th>Sell avg/day</th>
+    <th>Since</th>
+  </tr>`;
 
   const ordered = rows.slice().sort((a, b) => {
-    const delta = b[totalKey] - a[totalKey];
+    const av = a[sort.key];
+    const bv = b[sort.key];
+    const delta = sort.direction === "asc" ? av - bv : bv - av;
     return delta || brokerName(a.broker).localeCompare(brokerName(b.broker), "ja");
   });
 
@@ -593,15 +612,31 @@ function renderSwapTotalRanking(bodyId, rows, side) {
     row.innerHTML = `
       <td class="pair-rank">#${index + 1}</td>
       <td><div class="broker-cell"><span class="series-dot" style="--series-color:${brokerColor(item.broker)}"></span>${brokerName(item.broker)}</div></td>
-      <td class="return-value ${valueClass(item[totalKey])}">${formatJpy(item[totalKey])}</td>
-      <td class="${valueClass(item[avgKey])}">${formatJpy(item[avgKey])}</td>
+      <td class="return-value ${valueClass(item.buyTotal)}">${formatJpy(item.buyTotal)}</td>
+      <td class="return-value ${valueClass(item.sellTotal)}">${formatJpy(item.sellTotal)}</td>
+      <td class="${valueClass(item.buyAvg)}">${formatJpy(item.buyAvg)}</td>
+      <td class="${valueClass(item.sellAvg)}">${formatJpy(item.sellAvg)}</td>
       <td>${formatDate(item.startDate)}</td>`;
     body.appendChild(row);
   });
 
   if (!ordered.length) {
-    body.innerHTML = '<tr><td colspan="5" class="ranking-empty">No swap history for this range.</td></tr>';
+    body.innerHTML = '<tr><td colspan="7" class="ranking-empty">No swap history for this range.</td></tr>';
   }
+
+  document.querySelectorAll("[data-detail-swap-sort]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const key = button.dataset.detailSwapSort;
+      if (state.detailSwapRankingSort.key === key) {
+        state.detailSwapRankingSort.direction =
+          state.detailSwapRankingSort.direction === "desc" ? "asc" : "desc";
+      } else {
+        state.detailSwapRankingSort.key = key;
+        state.detailSwapRankingSort.direction = "desc";
+      }
+      renderSwapTotalRanking(periodSwapTotalRows());
+    });
+  });
 }
 
 function renderPairDetail() {
@@ -659,8 +694,7 @@ function renderPairDetail() {
   $("detailAnnualizedSpread").className = best ? valueClass(best.annualizedSpread) : "";
 
   const swapTotalRows = periodSwapTotalRows();
-  renderSwapTotalRanking("buySwapRankingBody", swapTotalRows, "long");
-  renderSwapTotalRanking("sellSwapRankingBody", swapTotalRows, "short");
+  renderSwapTotalRanking(swapTotalRows);
   $("detailBrokerCount").textContent = swapTotalRows.length
     ? String(swapTotalRows.length)
     : "—";
@@ -1159,7 +1193,19 @@ function renderChart(series, spotReference) {
       extraCssText: "box-shadow:0 14px 34px rgba(0,0,0,.32);border-radius:7px;",
       valueFormatter: (value) => Number(value).toFixed(2),
     },
-    xAxis: { type: "time", boundaryGap: false, axisLine: { lineStyle: { color: "#24303b" } }, axisTick: { show: false }, axisLabel: { color: "#667382", fontSize: 10, hideOverlap: true }, splitLine: { show: false } },
+    xAxis: {
+      type: "time",
+      boundaryGap: false,
+      max: [...series, ...(spotReference.length ? [{ points: spotReference }] : [])]
+        .flatMap((item) => item.points || [])
+        .map((point) => point.date)
+        .sort()
+        .at(-1) || null,
+      axisLine: { lineStyle: { color: "#24303b" } },
+      axisTick: { show: false },
+      axisLabel: { color: "#667382", fontSize: 10, hideOverlap: true },
+      splitLine: { show: false },
+    },
     yAxis: { type: "value", scale: true, axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: "#667382", fontSize: 10, formatter: (value) => value.toFixed(1) }, splitLine: { lineStyle: { color: "rgba(74,88,103,.16)" } } },
     dataZoom: [{ type: "inside", filterMode: "none", zoomOnMouseWheel: false, moveOnMouseMove: true, moveOnMouseWheel: false }],
     series: chartSeries,
@@ -1294,33 +1340,6 @@ function renderPairRankingColumn(side) {
 }
 
 function renderPairRanking() {
-  document.querySelectorAll("#detailSwapModeButtons button").forEach((button) => {
-    button.addEventListener("click", () => {
-      state.detailSwapMode = button.dataset.detailSwapMode;
-      if (state.view === "pairdetail") renderPairDetail();
-    });
-  });
-
-  $("detailBuyBrokerSelect").addEventListener("change", (event) => {
-    state.detailBuyBroker = event.target.value;
-    if (state.detailBuyBroker === state.detailSellBroker) {
-      const candidates = Object.keys(state.data.series[state.pair] || {});
-      state.detailSellBroker = candidates.find((id) => id !== state.detailBuyBroker) || null;
-    }
-    renderDetailBrokerSelectors();
-    renderSelectedArbitrageChart();
-  });
-
-  $("detailSellBrokerSelect").addEventListener("change", (event) => {
-    state.detailSellBroker = event.target.value;
-    if (state.detailSellBroker === state.detailBuyBroker) {
-      const candidates = Object.keys(state.data.series[state.pair] || {});
-      state.detailBuyBroker = candidates.find((id) => id !== state.detailSellBroker) || null;
-    }
-    renderDetailBrokerSelectors();
-    renderSelectedArbitrageChart();
-  });
-
   document.querySelectorAll("#rankingTabs button").forEach((button) => {
     button.classList.toggle("active", button.dataset.rankingMetric === state.rankingMetric);
   });
@@ -1659,6 +1678,35 @@ function setupControls() {
   $("resetBrokers").addEventListener("click", () => {
     resetDefaultBrokers();
     renderDashboard();
+  });
+
+  document.querySelectorAll("#detailSwapModeButtons button").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.detailSwapMode = button.dataset.detailSwapMode;
+      if (state.view === "pairdetail") renderPairDetail();
+    });
+  });
+
+  $("detailBuyBrokerSelect").addEventListener("change", (event) => {
+    state.detailBuyBroker = event.target.value;
+    if (state.detailBuyBroker === state.detailSellBroker) {
+      const candidates = Object.keys(state.data.series[state.pair] || {});
+      state.detailSellBroker =
+        candidates.find((id) => id !== state.detailBuyBroker) || null;
+    }
+    renderDetailBrokerSelectors();
+    renderSelectedArbitrageChart();
+  });
+
+  $("detailSellBrokerSelect").addEventListener("change", (event) => {
+    state.detailSellBroker = event.target.value;
+    if (state.detailSellBroker === state.detailBuyBroker) {
+      const candidates = Object.keys(state.data.series[state.pair] || {});
+      state.detailBuyBroker =
+        candidates.find((id) => id !== state.detailSellBroker) || null;
+    }
+    renderDetailBrokerSelectors();
+    renderSelectedArbitrageChart();
   });
 
   pairSelect.addEventListener("change", () => {

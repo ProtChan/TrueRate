@@ -42,6 +42,9 @@ class SeriesEffectiveDateTest(unittest.TestCase):
         self.assertEqual(points["2026-09-09"]["cum_short_swap_jpy"], 0.0)
         self.assertEqual(points["2026-09-10"]["cum_long_swap_jpy"], 339.0)
         self.assertEqual(points["2026-09-10"]["cum_short_swap_jpy"], -339.0)
+        series = payload["series"]["USD/JPY"]["gmo_gaika"]
+        self.assertEqual(series["swap_start_date"], "2026-09-10")
+        self.assertEqual(series["swap_end_date"], "2026-09-10")
 
     def test_quote_currency_swap_is_converted_to_jpy(self):
         swaps = [

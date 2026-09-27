@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="FX spot return and broker swap cashflow comparison">
   <title>TrueRate — FX Total Return Dashboard</title>
-  <link rel="stylesheet" href="./styles.css">
+  <link rel="stylesheet" href="./styles.css?v=20260927-5">
 </head>
 <body>
   <div class="app-shell">
@@ -76,24 +76,15 @@
       </section>
 
       <section class="broker-filter-strip" id="brokerFilterStrip">
-        <button
-          id="brokerFilterToggle"
-          class="broker-filter-toggle"
-          type="button"
-          aria-expanded="true"
-          aria-controls="brokerFilterContent"
-        >
+        <div class="broker-filter-head">
           <span class="strip-label">Brokers</span>
           <span id="brokerFilterSummary" class="broker-filter-summary">2 selected</span>
-          <span class="broker-filter-chevron" aria-hidden="true">⌃</span>
-        </button>
-        <div id="brokerFilterContent" class="broker-filter-content">
           <div class="broker-filter-actions" aria-label="Broker selection actions">
             <button id="selectAllBrokers" type="button">Select all</button>
-            <button id="clearBrokers" type="button" title="Keep one broker selected">Clear</button>
+            <button id="resetBrokers" type="button" title="Restore smart defaults">Reset</button>
           </div>
-          <div id="brokerButtons" class="broker-buttons"></div>
         </div>
+        <div id="brokerButtons" class="broker-buttons"></div>
       </section>
 
       <div id="dashboardView">
@@ -431,6 +422,6 @@
   <div id="errorState" class="error-state" hidden></div>
 
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="./app.js"></script>
+  <script src="./app.js?v=20260927-5"></script>
 </body>
 </html>

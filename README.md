@@ -129,7 +129,8 @@ site/
   index.html
   app.js
   styles.css
-  data/site-data.json    generated dashboard payload
+  data/site-data.json          generated dashboard manifest
+  data/site-series-XXX.json    generated bounded series chunks
 ~~~
 
 ## Automatic refresh
@@ -158,6 +159,7 @@ On a new data set:
 - トライオートFX backfills from `2024-01`
 
 After the initial backfill, monthly-history brokers refresh their recent months. アイネットFX, 楽天FX, DMM FX and みんなのFX/LIGHT系 refresh their official rolling data and merge those rows into TrueRate's retained history. Historical confirmed values are preserved, reference rates are updated, the site payload is rebuilt, and GitHub Pages is deployed in the same workflow.
+The browser payload is sharded into bounded JSON files so adding broad-coverage brokers cannot exceed GitHub's per-file size limit.
 
 Historical starts can be changed with:
 

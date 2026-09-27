@@ -262,54 +262,20 @@
           </div>
         </section>
 
-        <section class="detail-ranking-grid">
-          <section class="performance-panel swap-ranking-panel">
-            <header class="panel-header table-header">
-              <div>
-                <div class="panel-kicker">BUY SWAP RANKING</div>
-                <h2>Selected-period cumulative buy swap</h2>
-              </div>
-              <div class="table-note">Higher cumulative swap ranks first</div>
-            </header>
-            <div class="table-scroll">
-              <table class="performance-table swap-ranking-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Broker</th>
-                    <th>Cumulative</th>
-                    <th>Avg/day</th>
-                    <th>Since</th>
-                  </tr>
-                </thead>
-                <tbody id="buySwapRankingBody"></tbody>
-              </table>
+        <section class="performance-panel swap-ranking-panel">
+          <header class="panel-header table-header">
+            <div>
+              <div class="panel-kicker">SWAP RANKING</div>
+              <h2>Selected-period cumulative swap by broker</h2>
             </div>
-          </section>
-
-          <section class="performance-panel swap-ranking-panel">
-            <header class="panel-header table-header">
-              <div>
-                <div class="panel-kicker">SELL SWAP RANKING</div>
-                <h2>Selected-period cumulative sell swap</h2>
-              </div>
-              <div class="table-note">Higher cumulative swap ranks first</div>
-            </header>
-            <div class="table-scroll">
-              <table class="performance-table swap-ranking-table">
-                <thead>
-                  <tr>
-                    <th>#</th>
-                    <th>Broker</th>
-                    <th>Cumulative</th>
-                    <th>Avg/day</th>
-                    <th>Since</th>
-                  </tr>
-                </thead>
-                <tbody id="sellSwapRankingBody"></tbody>
-              </table>
-            </div>
-          </section>
+            <div class="table-note">Click BUY or SELL swap to sort</div>
+          </header>
+          <div class="table-scroll">
+            <table class="performance-table swap-ranking-table">
+              <thead id="swapRankingHead"></thead>
+              <tbody id="swapRankingBody"></tbody>
+            </table>
+          </div>
         </section>
 
         <section class="detail-chart-panel wide-detail-chart selected-arb-panel">
@@ -422,6 +388,6 @@
   <div id="errorState" class="error-state" hidden></div>
 
   <script src="https://cdn.jsdelivr.net/npm/echarts@5/dist/echarts.min.js"></script>
-  <script src="./app.js?v=20260927-6"></script>
+  <script src="./app.js?v=20260927-7"></script>
 </body>
 </html>

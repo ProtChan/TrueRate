@@ -263,6 +263,30 @@ input[type="date"]:focus {
   margin: 0;
 }
 
+.broker-filter-actions {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 5px;
+}
+
+.broker-filter-actions button {
+  min-height: 28px;
+  padding: 0 9px;
+  border: 1px solid var(--border);
+  border-radius: 5px;
+  color: var(--muted);
+  background: #0a0f15;
+  cursor: pointer;
+  font-size: 0.68rem;
+  font-weight: 700;
+}
+
+.broker-filter-actions button:hover {
+  color: var(--text);
+  border-color: var(--border-strong);
+  background: var(--surface-2);
+}
+
 .broker-buttons {
   display: flex;
   flex-wrap: wrap;
@@ -599,8 +623,16 @@ footer {
   .broker-filter-strip {
     align-items: flex-start;
     flex-direction: column;
-    gap: 3px;
+    gap: 6px;
     padding: 9px 10px 7px;
+  }
+
+  .broker-filter-actions {
+    width: 100%;
+  }
+
+  .broker-filter-actions button {
+    flex: 1;
   }
 
   .panel-header {

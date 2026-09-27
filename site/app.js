@@ -7,7 +7,6 @@ const state = {
   customStart: null,
   brokers: new Set(),
   brokerSelectionDirty: false,
-  brokerFilterCollapsed: false,
   chart: null,
   detailCharts: {},
   detailSwapMode: "cumulative",
@@ -848,11 +847,6 @@ function renderBrokerButtons() {
   const pairSeries = state.data.series[state.pair] || {};
   const container = $("brokerButtons");
   container.innerHTML = "";
-  $("brokerFilterStrip").classList.toggle("collapsed", state.brokerFilterCollapsed);
-  $("brokerFilterToggle").setAttribute(
-    "aria-expanded",
-    state.brokerFilterCollapsed ? "false" : "true"
-  );
   $("brokerFilterSummary").textContent = `${state.brokers.size} selected`;
 
   for (const broker of state.data.brokers) {
@@ -1598,26 +1592,14 @@ function setupControls() {
   pairSelect.value = state.pair;
   resetDefaultBrokers();
 
-  $("brokerFilterToggle").addEventListener("click", () => {
-    state.brokerFilterCollapsed = !state.brokerFilterCollapsed;
-    renderBrokerButtons();
-  });
-
   $("selectAllBrokers").addEventListener("click", () => {
     state.brokerSelectionDirty = true;
     state.brokers = new Set(availableBrokerIds());
     renderDashboard();
   });
 
-  $("clearBrokers").addEventListener("click", () => {
-    state.brokerSelectionDirty = true;
-    const available = availableBrokerIds();
-    const keep =
-      available.find((id) => state.brokers.has(id))
-      || [...defaultBrokerSelection()].find((id) => available.includes(id))
-      || available[0]
-      || null;
-    state.brokers = keep ? new Set([keep]) : new Set();
+  $("resetBrokers").addEventListener("click", () => {
+    resetDefaultBrokers();
     renderDashboard();
   });
 

@@ -104,7 +104,7 @@
               <div class="panel-kicker">BROKER PERFORMANCE</div>
               <h2>Return comparison</h2>
             </div>
-            <div class="table-note">Click a column to sort · Swap is reflected on D+1 JST</div>
+            <div class="table-note">Click a column to sort · Swap timing follows each broker's calendar rule</div>
           </header>
 
           <div class="table-scroll">
@@ -226,8 +226,8 @@
             <strong id="detailAnnualizedSpread">—</strong>
           </div>
           <div>
-            <span>Positive arb days</span>
-            <strong id="detailPositiveDays">—</strong>
+            <span>Brokers ranked</span>
+            <strong id="detailBrokerCount">—</strong>
           </div>
         </section>
 
@@ -255,15 +255,54 @@
           </div>
         </section>
 
-        <section class="detail-chart-panel wide-detail-chart">
-          <header class="panel-header">
-            <div>
-              <div class="panel-kicker">BROKER DISPERSION</div>
-              <h2>Cross-broker spread & daily best arbitrage</h2>
+        <section class="detail-ranking-grid">
+          <section class="performance-panel swap-ranking-panel">
+            <header class="panel-header table-header">
+              <div>
+                <div class="panel-kicker">BUY SWAP RANKING</div>
+                <h2>Selected-period cumulative buy swap</h2>
+              </div>
+              <div class="table-note">Higher cumulative swap ranks first</div>
+            </header>
+            <div class="table-scroll">
+              <table class="performance-table swap-ranking-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Broker</th>
+                    <th>Cumulative</th>
+                    <th>Avg/day</th>
+                    <th>Since</th>
+                  </tr>
+                </thead>
+                <tbody id="buySwapRankingBody"></tbody>
+              </table>
             </div>
-            <div class="table-note">Buy range / Sell range / Best different-broker net</div>
-          </header>
-          <div id="spreadChart" class="detail-chart spread-detail-chart"></div>
+          </section>
+
+          <section class="performance-panel swap-ranking-panel">
+            <header class="panel-header table-header">
+              <div>
+                <div class="panel-kicker">SELL SWAP RANKING</div>
+                <h2>Selected-period cumulative sell swap</h2>
+              </div>
+              <div class="table-note">Higher cumulative swap ranks first</div>
+            </header>
+            <div class="table-scroll">
+              <table class="performance-table swap-ranking-table">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Broker</th>
+                    <th>Cumulative</th>
+                    <th>Avg/day</th>
+                    <th>Since</th>
+                  </tr>
+                </thead>
+                <tbody id="sellSwapRankingBody"></tbody>
+              </table>
+            </div>
+          </section>
         </section>
 
         <section class="detail-chart-panel wide-detail-chart selected-arb-panel">
@@ -345,7 +384,7 @@
         <div class="methodology-grid">
           <div>
             <strong>Swap timing</strong>
-            <p>原則は各業者のカレンダー表示日の翌営業日にTrueRateへ反映します。金曜表示は翌月曜へ繰り越します。SBI FXトレードのみ表示日当日として扱い、土日表示は翌月曜へ繰り越します。</p>
+            <p>原則は各業者のカレンダー表示日の翌営業日にTrueRateへ反映します。SBI FXトレードは表示日当日（土日表示は翌月曜）、サクソバンク証券とDMM FX系は表示日当日として扱います。</p>
           </div>
           <div>
             <strong>Spot reference</strong>
@@ -361,7 +400,7 @@
           </div>
           <div>
             <strong>Pair detail</strong>
-            <p>各業者の日次BUY/SELLスワップ、業者間レンジ、日次の最良アービトラージ、期間固定の最良業者ペアを同じ期間条件で確認できます。</p>
+            <p>各業者の日次BUY/SELLスワップ、選択期間のBUY/SELL累計ランキング、期間固定の最良業者ペアを同じ期間条件で確認できます。</p>
           </div>
         </div>
       </details>

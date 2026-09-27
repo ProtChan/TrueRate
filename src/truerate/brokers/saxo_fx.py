@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 import requests
 from pypdf import PdfReader
 
-from truerate.models import SwapRecord, next_business_day_after
+from truerate.models import SwapRecord
 
 BROKER_ID = "saxo_fx"
 BROKER_NAME = "サクソバンク証券"
@@ -16,6 +16,8 @@ JST = ZoneInfo("Asia/Tokyo")
 
 HISTORY_URL = "https://cdn-storage.saxobank.com/jp/swappoint/swappoint-historical.pdf"
 WEEKLY_URL = "https://cdn-storage.saxobank.com/jp/swappoint/swappoint-weekly.pdf"
+
+NON_FX_ASSET_CODES = frozenset({"XAU", "XAG", "XPT", "XPD", "XCU", "XBR", "XTI"})
 
 ROW_RE = re.compile(
     r"^(?P<code>[A-Z]{6})\s+.*?"
@@ -32,6 +34,14 @@ def _number(value: str) -> float:
 
 def _pair_from_code(code: str) -> str:
     return f"{code[:3]}/{code[3:]}"
+
+
+def is_fx_pair(pair: str) -> bool:
+    try:
+        base, quote = pair.upper().split("/", 1)
+    except ValueError:
+        return False
+    return base not in NON_FX_ASSET_CODES and quote not in NON_FX_ASSET_CODES
 
 
 def parse_pdf_text(
@@ -63,7 +73,9 @@ def parse_pdf_text(
             continue
 
         pair = _pair_from_code(match.group("code"))
-        effective_date = next_business_day_after(trade_date)
+        if not is_fx_pair(pair):
+            continue
+        effective_date = trade_date
         records.append(
             SwapRecord(
                 broker=BROKER_ID,

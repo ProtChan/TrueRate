@@ -212,6 +212,13 @@ def build_site_payload(
         if any(not rates.get(currency) for currency in required):
             continue
 
+        swap_effective_dates = [
+            date.fromisoformat(row["effective_date"])
+            for row in rows
+        ]
+        swap_start_date = min(swap_effective_dates)
+        swap_end_date = max(swap_effective_dates)
+
         start = min(date.fromisoformat(row["trade_date"]) for row in rows)
         while start <= today and any(start not in rates[currency] for currency in required):
             start += timedelta(days=1)
@@ -269,6 +276,8 @@ def build_site_payload(
         series.setdefault(pair, {})[broker] = {
             "start_date": points[0]["date"],
             "end_date": points[-1]["date"],
+            "swap_start_date": swap_start_date.isoformat(),
+            "swap_end_date": swap_end_date.isoformat(),
             "points": points,
         }
 

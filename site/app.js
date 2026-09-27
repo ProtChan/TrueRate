@@ -735,6 +735,8 @@ function openPairDetail(pair) {
   window.scrollTo({ top: 0, behavior: "smooth" });
 }
 
+const DEFAULT_BROKER_RECENCY_TOLERANCE_DAYS = 7;
+
 function requestedRangeForPair(pair = state.pair) {
   const pairSeries = state.data.series[pair] || {};
   const allPoints = Object.values(pairSeries)
@@ -758,33 +760,67 @@ function requestedRangeForPair(pair = state.pair) {
   return { start, end: latest };
 }
 
-function brokerDefaultCandidate(broker, item, range) {
+function brokerSwapCoverage(item) {
   const rawPoints = item.points || [];
-  if (rawPoints.length < 2 || !range) return null;
+  if (!rawPoints.length) return null;
+  return {
+    start: item.swap_start_date || item.start_date || rawPoints[0].date,
+    end: item.swap_end_date || item.end_date || rawPoints.at(-1).date,
+  };
+}
 
-  const points = rawPoints.filter(
-    (point) => point.date >= range.start && point.date <= range.end
+function swapScoreForWindow(item, start, end) {
+  if (!start || !end || start > end) return null;
+  const points = (item.points || []).filter(
+    (point) => point.date >= start && point.date <= end
   );
   if (points.length < 2) return null;
 
   const first = points[0];
   const last = points.at(-1);
-  const coverageDays = Math.max(1, daysBetween(first.date, last.date));
   const longTotal = last.cum_long_swap_jpy - first.cum_long_swap_jpy;
   const shortTotal = last.cum_short_swap_jpy - first.cum_short_swap_jpy;
-  const swapScore =
-    state.side === "long" ? longTotal :
+  return state.side === "long" ? longTotal :
     state.side === "short" ? shortTotal :
     Math.max(longTotal, shortTotal);
+}
+
+function brokerDefaultCandidate(broker, item, range) {
+  const coverage = brokerSwapCoverage(item);
+  if (!coverage || !range) return null;
+
+  const coverageStart = coverage.start > range.start ? coverage.start : range.start;
+  const coverageEnd = coverage.end < range.end ? coverage.end : range.end;
+  if (coverageStart > coverageEnd) return null;
+
+  const coverageDays = Math.max(1, daysBetween(coverageStart, coverageEnd));
+  const endLagDays = daysBetween(coverage.end, range.end);
 
   return {
     broker,
+    item,
+    swapStart: coverage.start,
+    swapEnd: coverage.end,
+    coverageStart,
+    coverageEnd,
     coverageDays,
     fullCoverage:
-      rawPoints[0].date <= range.start &&
-      rawPoints.at(-1).date >= range.end,
-    swapScore,
+      coverage.start <= range.start &&
+      endLagDays <= DEFAULT_BROKER_RECENCY_TOLERANCE_DAYS,
   };
+}
+
+function rankDefaultPool(pool, start, end) {
+  return pool
+    .map((candidate) => ({
+      ...candidate,
+      swapScore: swapScoreForWindow(candidate.item, start, end),
+    }))
+    .filter((candidate) => Number.isFinite(candidate.swapScore))
+    .sort((a, b) =>
+      (b.swapScore - a.swapScore) ||
+      brokerName(a.broker).localeCompare(brokerName(b.broker), "ja")
+    );
 }
 
 function defaultBrokerSelection() {
@@ -801,29 +837,51 @@ function defaultBrokerSelection() {
     return new Set(entries.slice(0, 2).map(([broker]) => broker));
   }
 
-  const compareSwap = (a, b) =>
-    (b.swapScore - a.swapScore) ||
-    (b.coverageDays - a.coverageDays) ||
-    brokerName(a.broker).localeCompare(brokerName(b.broker), "ja");
-
-  const maxCoverageDays = Math.max(...candidates.map((item) => item.coverageDays));
   const fullCoverage = candidates.filter((item) => item.fullCoverage);
-  const primaryPool = fullCoverage.length
-    ? fullCoverage
-    : candidates.filter((item) => item.coverageDays === maxCoverageDays);
-  primaryPool.sort(compareSwap);
+  let primaryPool = fullCoverage;
+  let comparisonStart = range?.start || null;
+  let comparisonEnd = fullCoverage.length
+    ? fullCoverage.map((item) => item.swapEnd).sort()[0]
+    : null;
 
-  const selected = [];
-  if (primaryPool[0]) selected.push(primaryPool[0]);
+  if (!primaryPool.length) {
+    const maxCoverageDays = Math.max(...candidates.map((item) => item.coverageDays));
+    primaryPool = candidates.filter((item) => item.coverageDays === maxCoverageDays);
+    comparisonStart = primaryPool.map((item) => item.coverageStart).sort().at(-1);
+    comparisonEnd = primaryPool.map((item) => item.coverageEnd).sort()[0];
+  }
 
-  if (primaryPool.length >= 2) {
-    selected.push(primaryPool[1]);
-  } else {
-    const remaining = candidates
-      .filter((item) => item.broker !== selected[0]?.broker)
+  let ranked = rankDefaultPool(primaryPool, comparisonStart, comparisonEnd);
+  if (!ranked.length) {
+    ranked = primaryPool
+      .slice()
       .sort((a, b) =>
         (b.coverageDays - a.coverageDays) ||
-        compareSwap(a, b)
+        brokerName(a.broker).localeCompare(brokerName(b.broker), "ja")
+      );
+  }
+
+  const selected = [];
+  if (ranked[0]) selected.push(ranked[0]);
+
+  if (ranked.length >= 2) {
+    selected.push(ranked[1]);
+  } else {
+    const selectedBroker = selected[0]?.broker;
+    const remaining = candidates
+      .filter((item) => item.broker !== selectedBroker)
+      .map((item) => ({
+        ...item,
+        ownSwapScore: swapScoreForWindow(
+          item.item,
+          item.coverageStart,
+          item.coverageEnd
+        ),
+      }))
+      .sort((a, b) =>
+        (b.coverageDays - a.coverageDays) ||
+        ((b.ownSwapScore ?? -Infinity) - (a.ownSwapScore ?? -Infinity)) ||
+        brokerName(a.broker).localeCompare(brokerName(b.broker), "ja")
       );
     if (remaining[0]) selected.push(remaining[0]);
   }

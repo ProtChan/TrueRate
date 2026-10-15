@@ -10,6 +10,7 @@ rakuten_fx,AUD/CAD,2026-10-09,2026-10-12,0,0.0,0.0,10000,CAD,scheduled,https://w
 rakuten_fx,AUD/CAD,2026-10-12,2026-10-13,0,0.4,-0.6,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,AUD/CAD,2026-10-13,2026-10-14,0,0.4,-0.6,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,AUD/CAD,2026-10-14,2026-10-15,0,0.4,-0.6,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,AUD/CAD,2026-10-15,2026-10-16,0,1.2,-1.8,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,AUD/CHF,2026-09-28,2026-09-29,0,0.2,-0.74,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,AUD/CHF,2026-09-30,2026-10-01,0,0.2,-0.74,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,AUD/CHF,2026-10-02,2026-10-05,0,0.2,-0.74,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -21,6 +22,7 @@ rakuten_fx,AUD/CHF,2026-10-09,2026-10-12,0,0.0,0.0,10000,CHF,scheduled,https://w
 rakuten_fx,AUD/CHF,2026-10-12,2026-10-13,0,0.2,-0.74,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,AUD/CHF,2026-10-13,2026-10-14,0,0.2,-0.74,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,AUD/CHF,2026-10-14,2026-10-15,0,0.2,-0.74,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,AUD/CHF,2026-10-15,2026-10-16,0,0.6,-2.22,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,AUD/JPY,2026-09-28,2026-09-29,0,83.0,-91.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,AUD/JPY,2026-09-30,2026-10-01,0,90.0,-98.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,AUD/JPY,2026-10-02,2026-10-05,0,90.0,-98.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -32,6 +34,7 @@ rakuten_fx,AUD/JPY,2026-10-09,2026-10-12,0,93.0,-101.0,10000,JPY,scheduled,https
 rakuten_fx,AUD/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,AUD/JPY,2026-10-13,2026-10-14,0,93.0,-101.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,AUD/JPY,2026-10-14,2026-10-15,0,90.0,-98.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,AUD/JPY,2026-10-15,2026-10-16,0,270.0,-294.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,AUD/NZD,2026-09-28,2026-09-29,0,0.3,-1.1,10000,NZD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,AUD/NZD,2026-09-30,2026-10-01,0,0.3,-1.1,10000,NZD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,AUD/NZD,2026-10-02,2026-10-05,0,0.3,-1.1,10000,NZD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -43,6 +46,7 @@ rakuten_fx,AUD/NZD,2026-10-09,2026-10-12,0,0.0,0.0,10000,NZD,scheduled,https://w
 rakuten_fx,AUD/NZD,2026-10-12,2026-10-13,0,0.3,-1.1,10000,NZD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,AUD/NZD,2026-10-13,2026-10-14,0,0.3,-1.1,10000,NZD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,AUD/NZD,2026-10-14,2026-10-15,0,0.3,-1.1,10000,NZD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,AUD/NZD,2026-10-15,2026-10-16,0,0.9,-3.3,10000,NZD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,AUD/USD,2026-09-28,2026-09-29,0,0.01,-0.31,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,AUD/USD,2026-09-30,2026-10-01,0,0.01,-0.31,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,AUD/USD,2026-10-02,2026-10-05,0,0.01,-0.31,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -54,6 +58,7 @@ rakuten_fx,AUD/USD,2026-10-09,2026-10-12,0,0.0,0.0,10000,USD,scheduled,https://w
 rakuten_fx,AUD/USD,2026-10-12,2026-10-13,0,0.01,-0.31,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,AUD/USD,2026-10-13,2026-10-14,0,0.01,-0.31,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,AUD/USD,2026-10-14,2026-10-15,0,0.01,-0.31,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,AUD/USD,2026-10-15,2026-10-16,0,0.03,-0.93,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,CAD/CHF,2026-09-28,2026-09-29,0,0.4,-1.2,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,CAD/CHF,2026-09-30,2026-10-01,0,0.2,-0.6,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,CAD/CHF,2026-10-02,2026-10-05,0,0.2,-0.6,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -65,6 +70,7 @@ rakuten_fx,CAD/CHF,2026-10-09,2026-10-12,0,0.0,0.0,10000,CHF,scheduled,https://w
 rakuten_fx,CAD/CHF,2026-10-12,2026-10-13,0,0.2,-0.6,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,CAD/CHF,2026-10-13,2026-10-14,0,0.2,-0.6,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,CAD/CHF,2026-10-14,2026-10-15,0,0.2,-0.6,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,CAD/CHF,2026-10-15,2026-10-16,0,0.6,-1.8,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,CAD/JPY,2026-09-28,2026-09-29,0,56.0,-76.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,CAD/JPY,2026-09-30,2026-10-01,0,28.0,-38.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,CAD/JPY,2026-10-02,2026-10-05,0,28.0,-38.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -76,6 +82,7 @@ rakuten_fx,CAD/JPY,2026-10-09,2026-10-12,0,25.0,-35.0,10000,JPY,scheduled,https:
 rakuten_fx,CAD/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,CAD/JPY,2026-10-13,2026-10-14,0,25.0,-35.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,CAD/JPY,2026-10-14,2026-10-15,0,25.0,-35.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,CAD/JPY,2026-10-15,2026-10-16,0,75.0,-105.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,CHF/JPY,2026-09-28,2026-09-29,0,-53.0,25.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,CHF/JPY,2026-09-30,2026-10-01,0,-53.0,25.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,CHF/JPY,2026-10-02,2026-10-05,0,-53.0,25.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -87,6 +94,7 @@ rakuten_fx,CHF/JPY,2026-10-09,2026-10-12,0,-58.0,30.0,10000,JPY,scheduled,https:
 rakuten_fx,CHF/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,CHF/JPY,2026-10-13,2026-10-14,0,-58.0,30.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,CHF/JPY,2026-10-14,2026-10-15,0,-58.0,30.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,CHF/JPY,2026-10-15,2026-10-16,0,-174.0,90.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,CNH/HKD,2026-09-28,2026-09-29,0,-0.68,0.08,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,CNH/HKD,2026-09-30,2026-10-01,0,-0.68,0.08,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,CNH/HKD,2026-10-02,2026-10-05,0,0.0,0.0,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -98,6 +106,7 @@ rakuten_fx,CNH/HKD,2026-10-09,2026-10-12,0,0.0,0.0,10000,HKD,scheduled,https://w
 rakuten_fx,CNH/HKD,2026-10-12,2026-10-13,0,-0.68,0.08,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,CNH/HKD,2026-10-13,2026-10-14,0,-0.68,0.08,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,CNH/HKD,2026-10-14,2026-10-15,0,-0.68,0.08,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,CNH/HKD,2026-10-15,2026-10-16,0,-2.72,0.32,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,CNH/JPY,2026-09-28,2026-09-29,0,0.0,-10.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,CNH/JPY,2026-09-30,2026-10-01,0,0.0,-10.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,CNH/JPY,2026-10-02,2026-10-05,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -109,6 +118,7 @@ rakuten_fx,CNH/JPY,2026-10-09,2026-10-12,0,0.0,-10.0,10000,JPY,scheduled,https:/
 rakuten_fx,CNH/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,CNH/JPY,2026-10-13,2026-10-14,0,0.0,-10.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,CNH/JPY,2026-10-14,2026-10-15,0,0.0,-10.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,CNH/JPY,2026-10-15,2026-10-16,0,0.0,-40.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,CZK/JPY,2026-09-28,2026-09-29,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,CZK/JPY,2026-09-30,2026-10-01,0,5.0,-10.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,CZK/JPY,2026-10-02,2026-10-05,0,5.0,-10.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -120,6 +130,7 @@ rakuten_fx,CZK/JPY,2026-10-09,2026-10-12,0,4.0,-9.0,10000,JPY,scheduled,https://
 rakuten_fx,CZK/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,CZK/JPY,2026-10-13,2026-10-14,0,4.0,-9.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,CZK/JPY,2026-10-14,2026-10-15,0,4.0,-9.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,CZK/JPY,2026-10-15,2026-10-16,0,12.0,-27.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,EUR/AUD,2026-09-28,2026-09-29,0,-1.1,0.6,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,EUR/AUD,2026-09-30,2026-10-01,0,-1.1,0.6,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,EUR/AUD,2026-10-02,2026-10-05,0,-1.1,0.6,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -131,6 +142,7 @@ rakuten_fx,EUR/AUD,2026-10-09,2026-10-12,0,0.0,0.0,10000,AUD,scheduled,https://w
 rakuten_fx,EUR/AUD,2026-10-12,2026-10-13,0,-1.1,0.6,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,EUR/AUD,2026-10-13,2026-10-14,0,-1.1,0.6,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,EUR/AUD,2026-10-14,2026-10-15,0,-1.1,0.6,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,EUR/AUD,2026-10-15,2026-10-16,0,-3.3,1.8,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,EUR/CHF,2026-09-28,2026-09-29,0,0.28,-0.64,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,EUR/CHF,2026-09-30,2026-10-01,0,0.28,-0.64,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,EUR/CHF,2026-10-02,2026-10-05,0,0.28,-0.64,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -142,6 +154,7 @@ rakuten_fx,EUR/CHF,2026-10-09,2026-10-12,0,0.0,0.0,10000,CHF,scheduled,https://w
 rakuten_fx,EUR/CHF,2026-10-12,2026-10-13,0,0.28,-0.64,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,EUR/CHF,2026-10-13,2026-10-14,0,0.28,-0.64,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,EUR/CHF,2026-10-14,2026-10-15,0,0.28,-0.64,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,EUR/CHF,2026-10-15,2026-10-16,0,0.84,-1.92,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,EUR/GBP,2026-09-28,2026-09-29,0,-0.6,0.2,10000,GBP,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,EUR/GBP,2026-09-30,2026-10-01,0,-0.6,0.2,10000,GBP,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,EUR/GBP,2026-10-02,2026-10-05,0,-0.6,0.2,10000,GBP,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -153,6 +166,7 @@ rakuten_fx,EUR/GBP,2026-10-09,2026-10-12,0,0.0,0.0,10000,GBP,scheduled,https://w
 rakuten_fx,EUR/GBP,2026-10-12,2026-10-13,0,-0.6,0.2,10000,GBP,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,EUR/GBP,2026-10-13,2026-10-14,0,-0.6,0.2,10000,GBP,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,EUR/GBP,2026-10-14,2026-10-15,0,-0.6,0.2,10000,GBP,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,EUR/GBP,2026-10-15,2026-10-16,0,-1.8,0.6,10000,GBP,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,EUR/JPY,2026-09-28,2026-09-29,0,55.0,-65.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,EUR/JPY,2026-09-30,2026-10-01,0,55.0,-65.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,EUR/JPY,2026-10-02,2026-10-05,0,55.0,-65.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -164,6 +178,7 @@ rakuten_fx,EUR/JPY,2026-10-09,2026-10-12,0,55.0,-65.0,10000,JPY,scheduled,https:
 rakuten_fx,EUR/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,EUR/JPY,2026-10-13,2026-10-14,0,55.0,-65.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,EUR/JPY,2026-10-14,2026-10-15,0,55.0,-65.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,EUR/JPY,2026-10-15,2026-10-16,0,165.0,-195.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,EUR/USD,2026-09-28,2026-09-29,0,-0.55,0.25,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,EUR/USD,2026-09-30,2026-10-01,0,-0.85,0.55,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,EUR/USD,2026-10-02,2026-10-05,0,-0.85,0.55,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -175,6 +190,7 @@ rakuten_fx,EUR/USD,2026-10-09,2026-10-12,0,0.0,0.0,10000,USD,scheduled,https://w
 rakuten_fx,EUR/USD,2026-10-12,2026-10-13,0,-0.85,0.55,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,EUR/USD,2026-10-13,2026-10-14,0,-0.85,0.55,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,EUR/USD,2026-10-14,2026-10-15,0,-0.85,0.55,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,EUR/USD,2026-10-15,2026-10-16,0,-2.55,1.65,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,GBP/AUD,2026-09-28,2026-09-29,0,-0.67,0.17,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,GBP/AUD,2026-09-30,2026-10-01,0,-0.67,0.17,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,GBP/AUD,2026-10-02,2026-10-05,0,-0.67,0.17,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -186,6 +202,7 @@ rakuten_fx,GBP/AUD,2026-10-09,2026-10-12,0,0.0,0.0,10000,AUD,scheduled,https://w
 rakuten_fx,GBP/AUD,2026-10-12,2026-10-13,0,-0.67,0.17,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,GBP/AUD,2026-10-13,2026-10-14,0,-0.67,0.17,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,GBP/AUD,2026-10-14,2026-10-15,0,-0.67,0.17,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,GBP/AUD,2026-10-15,2026-10-16,0,-2.01,0.51,10000,AUD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,GBP/CHF,2026-09-28,2026-09-29,0,0.77,-1.37,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,GBP/CHF,2026-09-30,2026-10-01,0,0.77,-1.37,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,GBP/CHF,2026-10-02,2026-10-05,0,0.77,-1.37,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -197,6 +214,7 @@ rakuten_fx,GBP/CHF,2026-10-09,2026-10-12,0,0.0,0.0,10000,CHF,scheduled,https://w
 rakuten_fx,GBP/CHF,2026-10-12,2026-10-13,0,0.77,-1.37,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,GBP/CHF,2026-10-13,2026-10-14,0,0.77,-1.37,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,GBP/CHF,2026-10-14,2026-10-15,0,0.77,-1.37,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,GBP/CHF,2026-10-15,2026-10-16,0,2.31,-4.11,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,GBP/JPY,2026-09-28,2026-09-29,0,138.0,-146.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,GBP/JPY,2026-09-30,2026-10-01,0,137.0,-145.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,GBP/JPY,2026-10-02,2026-10-05,0,137.0,-145.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -208,6 +226,7 @@ rakuten_fx,GBP/JPY,2026-10-09,2026-10-12,0,132.0,-140.0,10000,JPY,scheduled,http
 rakuten_fx,GBP/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,GBP/JPY,2026-10-13,2026-10-14,0,132.0,-140.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,GBP/JPY,2026-10-14,2026-10-15,0,135.0,-143.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,GBP/JPY,2026-10-15,2026-10-16,0,405.0,-429.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,GBP/USD,2026-09-28,2026-09-29,0,-0.2,0.0,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,GBP/USD,2026-09-30,2026-10-01,0,-0.2,0.0,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,GBP/USD,2026-10-02,2026-10-05,0,-0.2,0.0,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -219,6 +238,7 @@ rakuten_fx,GBP/USD,2026-10-09,2026-10-12,0,0.0,0.0,10000,USD,scheduled,https://w
 rakuten_fx,GBP/USD,2026-10-12,2026-10-13,0,-0.2,0.0,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,GBP/USD,2026-10-13,2026-10-14,0,-0.2,0.0,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,GBP/USD,2026-10-14,2026-10-15,0,-0.2,0.0,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,GBP/USD,2026-10-15,2026-10-16,0,-0.6,0.0,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,HKD/JPY,2026-09-28,2026-09-29,0,5.0,-15.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,HKD/JPY,2026-09-30,2026-10-01,0,15.0,-45.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,HKD/JPY,2026-10-02,2026-10-05,0,5.0,-15.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -230,6 +250,7 @@ rakuten_fx,HKD/JPY,2026-10-09,2026-10-12,0,5.0,-15.0,10000,JPY,scheduled,https:/
 rakuten_fx,HKD/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,HKD/JPY,2026-10-13,2026-10-14,0,5.0,-15.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,HKD/JPY,2026-10-14,2026-10-15,0,5.0,-15.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,HKD/JPY,2026-10-15,2026-10-16,0,20.0,-60.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,HUF/JPY,2026-09-28,2026-09-29,0,1.0,-2.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,HUF/JPY,2026-09-30,2026-10-01,0,1.0,-2.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,HUF/JPY,2026-10-02,2026-10-05,0,1.0,-2.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -241,6 +262,7 @@ rakuten_fx,HUF/JPY,2026-10-09,2026-10-12,0,1.0,-2.0,10000,JPY,scheduled,https://
 rakuten_fx,HUF/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,HUF/JPY,2026-10-13,2026-10-14,0,1.0,-2.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,HUF/JPY,2026-10-14,2026-10-15,0,1.0,-2.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,HUF/JPY,2026-10-15,2026-10-16,0,3.0,-6.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,MXN/JPY,2026-09-28,2026-09-29,0,11.0,-14.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,MXN/JPY,2026-09-30,2026-10-01,0,11.0,-14.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,MXN/JPY,2026-10-02,2026-10-05,0,11.0,-14.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -252,6 +274,7 @@ rakuten_fx,MXN/JPY,2026-10-09,2026-10-12,0,11.0,-14.0,10000,JPY,scheduled,https:
 rakuten_fx,MXN/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,MXN/JPY,2026-10-13,2026-10-14,0,11.0,-14.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,MXN/JPY,2026-10-14,2026-10-15,0,11.0,-14.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,MXN/JPY,2026-10-15,2026-10-16,0,33.0,-42.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,NOK/JPY,2026-09-28,2026-09-29,0,11.0,-17.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,NOK/JPY,2026-09-30,2026-10-01,0,11.0,-17.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,NOK/JPY,2026-10-02,2026-10-05,0,11.0,-17.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -263,6 +286,7 @@ rakuten_fx,NOK/JPY,2026-10-09,2026-10-12,0,11.0,-17.0,10000,JPY,scheduled,https:
 rakuten_fx,NOK/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,NOK/JPY,2026-10-13,2026-10-14,0,11.0,-17.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,NOK/JPY,2026-10-14,2026-10-15,0,11.0,-17.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,NOK/JPY,2026-10-15,2026-10-16,0,33.0,-51.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,NOK/SEK,2026-09-28,2026-09-29,0,0.5,-1.3,10000,SEK,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,NOK/SEK,2026-09-30,2026-10-01,0,0.5,-1.3,10000,SEK,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,NOK/SEK,2026-10-02,2026-10-05,0,0.5,-1.3,10000,SEK,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -274,6 +298,7 @@ rakuten_fx,NOK/SEK,2026-10-09,2026-10-12,0,0.0,0.0,10000,SEK,scheduled,https://w
 rakuten_fx,NOK/SEK,2026-10-12,2026-10-13,0,0.5,-1.3,10000,SEK,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,NOK/SEK,2026-10-13,2026-10-14,0,0.5,-1.3,10000,SEK,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,NOK/SEK,2026-10-14,2026-10-15,0,0.5,-1.3,10000,SEK,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,NOK/SEK,2026-10-15,2026-10-16,0,1.5,-3.9,10000,SEK,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,NZD/CAD,2026-09-28,2026-09-29,0,0.08,-0.38,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,NZD/CAD,2026-09-30,2026-10-01,0,0.04,-0.19,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,NZD/CAD,2026-10-02,2026-10-05,0,0.04,-0.19,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -285,6 +310,7 @@ rakuten_fx,NZD/CAD,2026-10-09,2026-10-12,0,0.0,0.0,10000,CAD,scheduled,https://w
 rakuten_fx,NZD/CAD,2026-10-12,2026-10-13,0,0.04,-0.19,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,NZD/CAD,2026-10-13,2026-10-14,0,0.04,-0.19,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,NZD/CAD,2026-10-14,2026-10-15,0,0.04,-0.19,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,NZD/CAD,2026-10-15,2026-10-16,0,0.12,-0.57,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,NZD/CHF,2026-09-28,2026-09-29,0,0.1,-0.5,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,NZD/CHF,2026-09-30,2026-10-01,0,0.1,-0.5,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,NZD/CHF,2026-10-02,2026-10-05,0,0.1,-0.5,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -296,6 +322,7 @@ rakuten_fx,NZD/CHF,2026-10-09,2026-10-12,0,0.0,0.0,10000,CHF,scheduled,https://w
 rakuten_fx,NZD/CHF,2026-10-12,2026-10-13,0,0.1,-0.5,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,NZD/CHF,2026-10-13,2026-10-14,0,0.1,-0.5,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,NZD/CHF,2026-10-14,2026-10-15,0,0.1,-0.5,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,NZD/CHF,2026-10-15,2026-10-16,0,0.3,-1.5,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,NZD/JPY,2026-09-28,2026-09-29,0,37.0,-42.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,NZD/JPY,2026-09-30,2026-10-01,0,37.0,-42.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,NZD/JPY,2026-10-02,2026-10-05,0,37.0,-42.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -307,6 +334,7 @@ rakuten_fx,NZD/JPY,2026-10-09,2026-10-12,0,35.0,-40.0,10000,JPY,scheduled,https:
 rakuten_fx,NZD/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,NZD/JPY,2026-10-13,2026-10-14,0,35.0,-40.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,NZD/JPY,2026-10-14,2026-10-15,0,35.0,-40.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,NZD/JPY,2026-10-15,2026-10-16,0,105.0,-120.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,NZD/USD,2026-09-28,2026-09-29,0,-0.31,0.01,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,NZD/USD,2026-09-30,2026-10-01,0,-0.31,0.01,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,NZD/USD,2026-10-02,2026-10-05,0,-0.31,0.01,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -318,6 +346,7 @@ rakuten_fx,NZD/USD,2026-10-09,2026-10-12,0,0.0,0.0,10000,USD,scheduled,https://w
 rakuten_fx,NZD/USD,2026-10-12,2026-10-13,0,-0.31,0.01,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,NZD/USD,2026-10-13,2026-10-14,0,-0.31,0.01,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,NZD/USD,2026-10-14,2026-10-15,0,-0.31,0.01,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,NZD/USD,2026-10-15,2026-10-16,0,-0.93,0.03,10000,USD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,PLN/JPY,2026-09-28,2026-09-29,0,28.0,-38.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,PLN/JPY,2026-09-30,2026-10-01,0,28.0,-38.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,PLN/JPY,2026-10-02,2026-10-05,0,28.0,-38.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -329,6 +358,7 @@ rakuten_fx,PLN/JPY,2026-10-09,2026-10-12,0,26.0,-36.0,10000,JPY,scheduled,https:
 rakuten_fx,PLN/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,PLN/JPY,2026-10-13,2026-10-14,0,26.0,-36.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,PLN/JPY,2026-10-14,2026-10-15,0,26.0,-36.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,PLN/JPY,2026-10-15,2026-10-16,0,78.0,-108.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,SEK/JPY,2026-09-28,2026-09-29,0,2.0,-6.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,SEK/JPY,2026-09-30,2026-10-01,0,2.0,-6.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,SEK/JPY,2026-10-02,2026-10-05,0,2.0,-6.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -340,6 +370,7 @@ rakuten_fx,SEK/JPY,2026-10-09,2026-10-12,0,2.0,-6.0,10000,JPY,scheduled,https://
 rakuten_fx,SEK/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,SEK/JPY,2026-10-13,2026-10-14,0,2.0,-6.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,SEK/JPY,2026-10-14,2026-10-15,0,2.0,-6.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,SEK/JPY,2026-10-15,2026-10-16,0,6.0,-18.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,SGD/JPY,2026-09-28,2026-09-29,0,0.0,-27.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,SGD/JPY,2026-09-30,2026-10-01,0,0.0,-27.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,SGD/JPY,2026-10-02,2026-10-05,0,0.0,-27.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -351,6 +382,7 @@ rakuten_fx,SGD/JPY,2026-10-09,2026-10-12,0,0.0,-27.0,10000,JPY,scheduled,https:/
 rakuten_fx,SGD/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,SGD/JPY,2026-10-13,2026-10-14,0,0.0,-27.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,SGD/JPY,2026-10-14,2026-10-15,0,0.0,-27.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,SGD/JPY,2026-10-15,2026-10-16,0,0.0,-81.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,TRY/JPY,2026-09-28,2026-09-29,0,23.0,-26.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,TRY/JPY,2026-09-30,2026-10-01,0,23.0,-26.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,TRY/JPY,2026-10-02,2026-10-05,0,23.0,-26.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -362,6 +394,7 @@ rakuten_fx,TRY/JPY,2026-10-09,2026-10-12,0,23.0,-26.0,10000,JPY,scheduled,https:
 rakuten_fx,TRY/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,TRY/JPY,2026-10-13,2026-10-14,0,23.0,-26.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,TRY/JPY,2026-10-14,2026-10-15,0,23.0,-26.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,TRY/JPY,2026-10-15,2026-10-16,0,69.0,-78.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,USD/CAD,2026-09-28,2026-09-29,0,0.41,-0.71,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,USD/CAD,2026-09-30,2026-10-01,0,0.0,0.0,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,USD/CAD,2026-10-02,2026-10-05,0,1.23,-2.13,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -373,6 +406,7 @@ rakuten_fx,USD/CAD,2026-10-09,2026-10-12,0,2.0,-3.2,10000,CAD,scheduled,https://
 rakuten_fx,USD/CAD,2026-10-12,2026-10-13,0,0.0,0.0,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,USD/CAD,2026-10-13,2026-10-14,0,0.5,-0.8,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,USD/CAD,2026-10-14,2026-10-15,0,0.5,-0.8,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,USD/CAD,2026-10-15,2026-10-16,0,0.5,-0.8,10000,CAD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,USD/CHF,2026-09-28,2026-09-29,0,0.5,-1.1,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,USD/CHF,2026-09-30,2026-10-01,0,0.5,-1.1,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,USD/CHF,2026-10-02,2026-10-05,0,0.5,-1.1,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -384,6 +418,7 @@ rakuten_fx,USD/CHF,2026-10-09,2026-10-12,0,0.0,0.0,10000,CHF,scheduled,https://w
 rakuten_fx,USD/CHF,2026-10-12,2026-10-13,0,0.5,-1.1,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,USD/CHF,2026-10-13,2026-10-14,0,0.5,-1.1,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,USD/CHF,2026-10-14,2026-10-15,0,0.5,-1.1,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,USD/CHF,2026-10-15,2026-10-16,0,1.5,-3.3,10000,CHF,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,USD/HKD,2026-09-28,2026-09-29,0,0.7,-2.7,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,USD/HKD,2026-09-30,2026-10-01,0,2.1,-8.1,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,USD/HKD,2026-10-02,2026-10-05,0,0.7,-2.7,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -395,6 +430,7 @@ rakuten_fx,USD/HKD,2026-10-09,2026-10-12,0,0.0,0.0,10000,HKD,scheduled,https://w
 rakuten_fx,USD/HKD,2026-10-12,2026-10-13,0,0.7,-2.7,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,USD/HKD,2026-10-13,2026-10-14,0,0.7,-2.7,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,USD/HKD,2026-10-14,2026-10-15,0,2.5,-4.5,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,USD/HKD,2026-10-15,2026-10-16,0,10.0,-18.0,10000,HKD,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,USD/JPY,2026-09-28,2026-09-29,0,111.0,-116.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,USD/JPY,2026-09-30,2026-10-01,0,110.0,-115.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,USD/JPY,2026-10-02,2026-10-05,0,110.0,-115.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -406,6 +442,7 @@ rakuten_fx,USD/JPY,2026-10-09,2026-10-12,0,112.0,-117.0,10000,JPY,scheduled,http
 rakuten_fx,USD/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,USD/JPY,2026-10-13,2026-10-14,0,135.0,-140.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,USD/JPY,2026-10-14,2026-10-15,0,109.0,-114.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,USD/JPY,2026-10-15,2026-10-16,0,327.0,-342.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
 rakuten_fx,ZAR/JPY,2026-09-28,2026-09-29,0,12.0,-15.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-28T14:19:38+09:00
 rakuten_fx,ZAR/JPY,2026-09-30,2026-10-01,0,12.0,-15.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-09-30T14:29:22+09:00
 rakuten_fx,ZAR/JPY,2026-10-02,2026-10-05,0,12.0,-15.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-02T14:32:28+09:00
@@ -417,3 +454,4 @@ rakuten_fx,ZAR/JPY,2026-10-09,2026-10-12,0,12.0,-15.0,10000,JPY,scheduled,https:
 rakuten_fx,ZAR/JPY,2026-10-12,2026-10-13,0,0.0,0.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-12T14:52:47+09:00
 rakuten_fx,ZAR/JPY,2026-10-13,2026-10-14,0,12.0,-15.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-13T15:46:40+09:00
 rakuten_fx,ZAR/JPY,2026-10-14,2026-10-15,0,12.0,-15.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-14T14:12:31+09:00
+rakuten_fx,ZAR/JPY,2026-10-15,2026-10-16,0,36.0,-45.0,10000,JPY,scheduled,https://www.rakuten-sec.co.jp/web/fx/RateData/SwapData.dat,2026-10-15T13:54:32+09:00
